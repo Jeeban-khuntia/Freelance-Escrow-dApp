@@ -1,0 +1,1368 @@
+/* ==========================================================================
+   1. Reset / Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 10% -10%, var(--glow-a), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, var(--glow-b), transparent 50%),
+    linear-gradient(var(--dot) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dot) 1px, transparent 1px);
+  background-size: auto, auto, 28px 28px, 28px 28px;
+  background-attachment: fixed;
+  font-family: var(--font-sans);
+  line-height: 1.55;
+}
+
+img,
+svg {
+  max-width: 100%;
+  display: block;
+}
+
+ul,
+ol,
+dl {
+  margin: 0;
+  padding: 0;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  padding: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+   2. Theme Variables
+   ========================================================================== */
+
+:root {
+  --font-sans: "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --bg: #f3f6fb;
+  --surface: rgba(255, 255, 255, 0.94);
+  --elevated: #ffffff;
+  --text: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border: rgba(15, 23, 42, 0.1);
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --accent-2: #0f766e;
+  --accent-2-soft: rgba(15, 118, 110, 0.12);
+  --success: #059669;
+  --success-soft: rgba(5, 150, 105, 0.12);
+  --warning: #d97706;
+  --warning-soft: rgba(217, 119, 6, 0.14);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.12);
+  --input-bg: #ffffff;
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --shadow-hover: 0 22px 48px rgba(37, 99, 235, 0.14);
+  --glow-a: rgba(37, 99, 235, 0.16);
+  --glow-b: rgba(15, 118, 110, 0.12);
+  --dot: rgba(15, 23, 42, 0.035);
+  --header-bg: rgba(243, 246, 251, 0.78);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+  --max-width: 1180px;
+  --header-h: 4.5rem;
+}
+
+body.dark-theme,
+html.dark-theme,
+[data-theme="dark"] {
+  --bg: #0b1020;
+  --surface: rgba(17, 24, 43, 0.72);
+  --elevated: #151c32;
+  --text: #e8eefc;
+  --text-secondary: #c3cde3;
+  --text-muted: #8b97b3;
+  --border: rgba(148, 163, 184, 0.16);
+  --accent: #60a5fa;
+  --accent-strong: #93c5fd;
+  --accent-soft: rgba(96, 165, 250, 0.14);
+  --accent-2: #2dd4bf;
+  --accent-2-soft: rgba(45, 212, 191, 0.12);
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+  --input-bg: #11182c;
+  --shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 24px 52px rgba(96, 165, 250, 0.16);
+  --glow-a: rgba(59, 130, 246, 0.18);
+  --glow-b: rgba(45, 212, 191, 0.1);
+  --dot: rgba(226, 232, 240, 0.035);
+  --header-bg: rgba(11, 16, 32, 0.78);
+}
+
+#theme-toggle {
+  min-width: 2.75rem;
+}
+
+/* ==========================================================================
+   3. Typography
+   ========================================================================== */
+
+.section-heading {
+  font-size: clamp(1.45rem, 2vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.section-intro {
+  margin-top: 0.45rem;
+  margin-bottom: 1.4rem;
+  max-width: 46rem;
+  color: var(--text-secondary);
+}
+
+.job-title,
+.escrow-job-title,
+.dispute-job-title,
+.profile-display-name,
+.activity-title {
+  letter-spacing: -0.02em;
+}
+
+.client-wallet,
+.tx-hash,
+#profile-wallet,
+#escrow-tx-status {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+/* ==========================================================================
+   4. Layout
+   ========================================================================== */
+
+.main-content,
+.site-footer {
+  width: min(100% - 2rem, var(--max-width));
+  margin-inline: auto;
+}
+
+.main-content {
+  display: grid;
+  gap: 1.75rem;
+  padding: 1.5rem 0 3.5rem;
+}
+
+.main-content > section {
+  position: relative;
+  padding: 1.6rem 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  animation: section-in 0.55s ease both;
+  scroll-margin-top: 5.75rem;
+}
+
+.main-content > section:nth-child(2) { animation-delay: 0.04s; }
+.main-content > section:nth-child(3) { animation-delay: 0.08s; }
+.main-content > section:nth-child(4) { animation-delay: 0.12s; }
+.main-content > section:nth-child(5) { animation-delay: 0.16s; }
+.main-content > section:nth-child(6) { animation-delay: 0.2s; }
+.main-content > section:nth-child(7) { animation-delay: 0.24s; }
+.main-content > section:nth-child(8) { animation-delay: 0.28s; }
+.main-content > section:nth-child(9) { animation-delay: 0.32s; }
+
+@keyframes section-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   5. Header
+   ========================================================================== */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--header-bg);
+  backdrop-filter: blur(18px);
+}
+
+.header-brand {
+  flex: 0 0 auto;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.logo-mark {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(145deg, var(--accent) 0%, #1e3a8a 58%, var(--accent-2) 100%);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.logo-text {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-size: 1.05rem;
+}
+
+.main-nav {
+  flex: 1 1 18rem;
+}
+
+.nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  list-style: none;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.72rem;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.header-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.header-search {
+  display: flex;
+  align-items: center;
+  min-width: min(100%, 16rem);
+  padding: 0.18rem 0.18rem 0.18rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--input-bg);
+}
+
+.header-search .search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.45rem 0.4rem;
+}
+
+.header-search .search-input:focus {
+  outline: none;
+}
+
+.header-search .search-submit {
+  border-radius: var(--radius-pill);
+  padding: 0.42rem 0.85rem;
+}
+
+.theme-toggle {
+  padding: 0.48rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--elevated);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.wallet-connect {
+  padding: 0.52rem 1rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), #0f766e);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+  font-weight: 700;
+}
+
+.wallet-connect:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.notification-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.28rem;
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   6. Hero
+   ========================================================================== */
+
+.hero-section {
+  overflow: hidden;
+  isolation: isolate;
+  padding: 2.4rem 1.5rem 2.2rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 40%),
+    var(--surface);
+}
+
+.hero-section::before,
+.hero-section::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero-section::before {
+  width: 22rem;
+  height: 22rem;
+  top: -7rem;
+  right: -4rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--glow-a), transparent 68%);
+  animation: glow-drift 14s ease-in-out infinite alternate;
+}
+
+.hero-section::after {
+  inset: 0;
+  opacity: 0.45;
+  background-image:
+    linear-gradient(115deg, transparent 0 46%, rgba(37, 99, 235, 0.05) 46% 47%, transparent 47%),
+    radial-gradient(circle at 18% 80%, var(--glow-b), transparent 28%);
+}
+
+.hero-heading {
+  max-width: 18ch;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  color: var(--text);
+}
+
+.hero-description {
+  max-width: 40rem;
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.4rem;
+}
+
+.cta-primary,
+.cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.8rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.cta-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+}
+
+.cta-secondary {
+  border: 1px solid var(--border);
+  background: var(--elevated);
+  color: var(--text);
+}
+
+.cta-primary:hover,
+.cta-secondary:hover,
+.btn-apply-job:hover,
+.btn-view-job:hover,
+.btn-post-job:hover,
+.btn-escrow:hover,
+.btn-edit-profile:hover,
+.btn-apply-filters:hover,
+.btn-dispute:hover,
+#btn-submit-dispute:hover {
+  transform: translateY(-2px);
+}
+
+.cta-primary:active,
+.cta-secondary:active,
+button:active {
+  transform: translateY(1px);
+}
+
+.hero-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.5rem;
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--elevated) 88%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.hero-search .search-input {
+  flex: 1 1 16rem;
+  min-height: 3rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hero-search .search-submit {
+  min-height: 3rem;
+  padding-inline: 1.2rem;
+  border-radius: 14px;
+}
+
+@keyframes glow-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(-1.5rem, 1rem) scale(1.08); }
+}
+
+/* ==========================================================================
+   7. Shared Components
+   ========================================================================== */
+
+.search-input,
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--text);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.search-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.search-input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  outline: none;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled,
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.search-submit,
+.btn-apply-job,
+.btn-post-job,
+.btn-apply-filters,
+.btn-edit-profile,
+#btn-submit-dispute,
+.btn-dispute {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  padding: 0.62rem 1rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.btn-view-job {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.58rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--elevated);
+  color: var(--text);
+  font-weight: 650;
+}
+
+.job-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  padding: 0.18rem 0.62rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.job-state::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+#applied-jobs .job-state {
+  background: var(--accent-soft);
+}
+
+#active-jobs .job-state {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+#completed-jobs .job-state {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+#escrow-example .job-state,
+#dispute-status .job-state {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.job-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0.75rem 0;
+}
+
+.job-skills li {
+  padding: 0.22rem 0.62rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-2-soft);
+  color: var(--accent-2);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.role-badge {
+  display: inline-flex;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.role-badge + .role-badge {
+  background: var(--accent-2-soft);
+  color: var(--accent-2);
+}
+
+/* ==========================================================================
+   8. Job Cards
+   ========================================================================== */
+
+.job-card-list,
+.job-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16.5rem, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.job-card,
+.job-listing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.05rem 1.05rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--elevated);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.job-card:hover,
+.job-listing:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.recommended-job-card {
+  position: relative;
+}
+
+.match-percentage {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-bottom: 0.55rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-pill);
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.match-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.recommended-job-card:nth-child(1) .match-percentage {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.recommended-job-card:nth-child(2) .match-percentage {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.recommended-job-card:nth-child(3) .match-percentage {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.job-title {
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.job-description {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.job-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.28rem 0.8rem;
+  margin: 0.4rem 0 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.job-meta dt {
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.job-meta dd {
+  margin: 0;
+}
+
+.client-name {
+  display: block;
+  color: var(--text);
+  font-weight: 650;
+}
+
+.client-wallet {
+  color: var(--text-muted);
+}
+
+.job-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+}
+
+/* ==========================================================================
+   9. Browse / Filters
+   ========================================================================== */
+
+.job-filter-form {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--elevated) 80%, transparent);
+}
+
+.filter-search {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.filter-search label,
+.filter-field label,
+.form-field label,
+.raise-dispute-form label {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.filter-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.8rem;
+}
+
+.filter-controls legend {
+  margin-bottom: 0.55rem;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.filter-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.btn-apply-filters,
+.filter-reset {
+  justify-self: start;
+}
+
+.filter-reset {
+  border: 1px solid var(--border);
+  background: var(--elevated);
+  color: var(--text-secondary);
+}
+
+#browse-job-list {
+  grid-template-columns: 1fr;
+}
+
+.browse-job-card {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+/* ==========================================================================
+   10. Forms
+   ========================================================================== */
+
+.post-job-form,
+.raise-dispute-form {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.post-job-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--elevated);
+}
+
+.form-field {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.post-job-form .form-field:nth-child(1),
+.post-job-form .form-field:nth-child(2),
+.btn-post-job {
+  grid-column: 1 / -1;
+}
+
+textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.btn-post-job {
+  justify-self: start;
+  min-width: 10rem;
+  padding: 0.8rem 1.3rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+/* ==========================================================================
+   11. Dashboard
+   ========================================================================== */
+
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.activity-panel {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--elevated);
+}
+
+.activity-panel h3 {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+}
+
+.activity-list {
+  display: grid;
+  gap: 0.7rem;
+  list-style: none;
+}
+
+.activity-item {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.75rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 70%, var(--elevated));
+}
+
+#active-jobs .activity-item {
+  border-left-color: var(--warning);
+}
+
+#completed-jobs .activity-item {
+  border-left-color: var(--success);
+}
+
+.activity-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.activity-role,
+.activity-note {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* ==========================================================================
+   12. Escrow
+   ========================================================================== */
+
+.escrow-card {
+  padding: 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, var(--accent-soft), transparent 28%),
+    var(--elevated);
+}
+
+.escrow-job-title {
+  font-size: 1.15rem;
+}
+
+.job-state-row {
+  margin: 0.7rem 0 1rem;
+  color: var(--text-secondary);
+}
+
+.escrow-details {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) 1fr;
+  gap: 0.7rem 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 65%, transparent);
+}
+
+.escrow-details dt {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.escrow-details dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 650;
+}
+
+#escrow-amount {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+}
+
+#escrow-funding-status {
+  color: var(--success);
+}
+
+#escrow-submission-status {
+  color: var(--accent-2);
+}
+
+#escrow-approval-status {
+  color: var(--warning);
+}
+
+.tx-hash {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.escrow-actions,
+.dispute-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.btn-escrow {
+  min-width: 6.5rem;
+  padding: 0.68rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-weight: 750;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+#btn-fund-escrow {
+  background: var(--accent);
+  color: #fff;
+}
+
+#btn-submit-work {
+  background: var(--accent-2);
+  color: #fff;
+}
+
+#btn-approve-payment {
+  background: var(--success);
+  color: #fff;
+}
+
+#btn-raise-dispute,
+.btn-dispute {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+/* ==========================================================================
+   13. Dispute / Jury
+   ========================================================================== */
+
+.dispute-card {
+  padding: 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, var(--danger-soft), transparent 22%),
+    var(--elevated);
+}
+
+.dispute-job-title {
+  margin-bottom: 1rem;
+}
+
+.dispute-details {
+  display: grid;
+  gap: 1rem;
+}
+
+.dispute-details dt {
+  margin-bottom: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dispute-details dd {
+  margin: 0;
+}
+
+#jury-status {
+  padding: 0.7rem 0.8rem;
+  border-left: 3px solid var(--warning);
+  border-radius: 8px;
+  background: var(--warning-soft);
+  color: var(--text);
+}
+
+#dispute-resolution {
+  padding: 0.7rem 0.8rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+}
+
+#btn-submit-dispute {
+  justify-self: start;
+  margin-top: 0.4rem;
+  background: var(--danger);
+}
+
+/* ==========================================================================
+   14. Profile
+   ========================================================================== */
+
+.profile-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--elevated);
+}
+
+.profile-display-name {
+  font-size: 1.6rem;
+}
+
+.profile-details {
+  display: grid;
+  grid-template-columns: minmax(8rem, 11rem) 1fr;
+  gap: 0.75rem 1rem;
+}
+
+.profile-details dt {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.profile-details dd {
+  margin: 0;
+}
+
+#profile-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+#profile-wallet {
+  display: inline-block;
+  padding: 0.28rem 0.55rem;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  color: var(--text-secondary);
+}
+
+.btn-edit-profile {
+  justify-self: start;
+}
+
+/* ==========================================================================
+   15. Messages
+   ========================================================================== */
+
+.notification-list {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+}
+
+.notification-list li {
+  position: relative;
+  padding: 0.85rem 0.95rem 0.85rem 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--elevated);
+}
+
+.notification-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  width: 3px;
+  border-radius: 99px;
+  background: var(--accent);
+}
+
+/* ==========================================================================
+   16. Footer
+   ========================================================================== */
+
+.site-footer {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.6rem 0 2.4rem;
+  color: var(--text-muted);
+}
+
+.footer-brand {
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.1rem;
+  list-style: none;
+}
+
+.footer-links a {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
+}
+
+.footer-note {
+  font-size: 0.86rem;
+}
+
+/* ==========================================================================
+   17. Responsive Design
+   ========================================================================== */
+
+@media (max-width: 960px) {
+  .dashboard-columns,
+  .post-job-form,
+  .profile-details,
+  .escrow-details {
+    grid-template-columns: 1fr;
+  }
+
+  .site-header {
+    grid-template-columns: auto 1fr;
+  }
+
+  .header-tools {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .main-nav {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .header-tools {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .header-search {
+    flex: 1 1 100%;
+  }
+
+  .main-content,
+  .site-footer {
+    width: min(100% - 1.2rem, var(--max-width));
+  }
+
+  .main-content > section,
+  .hero-section {
+    padding: 1.2rem 0.95rem;
+  }
+
+  .hero-heading {
+    max-width: none;
+  }
+
+  .hero-search,
+  .hero-actions,
+  .escrow-actions,
+  .job-card-actions {
+    display: grid;
+  }
+
+  .cta-primary,
+  .cta-secondary,
+  .search-submit,
+  .btn-view-job,
+  .btn-apply-job,
+  .btn-escrow {
+    width: 100%;
+  }
+
+  .job-card-list,
+  .job-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-text {
+    font-size: 0.95rem;
+  }
+
+  .nav-link {
+    padding: 0.36rem 0.55rem;
+    font-size: 0.84rem;
+  }
+
+  .wallet-connect,
+  .theme-toggle {
+    flex: 1 1 auto;
+  }
+}
+
+/* ==========================================================================
+   18. Reduced Motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  .job-card:hover,
+  .job-listing:hover,
+  .cta-primary:hover,
+  .cta-secondary:hover,
+  .btn-apply-job:hover,
+  .btn-view-job:hover,
+  .btn-escrow:hover {
+    transform: none;
+  }
+}

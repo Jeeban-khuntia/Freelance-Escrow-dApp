@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FreelanceEscrow — Decentralized Freelance Marketplace</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header id="site-header" class="site-header">
+      <div class="header-brand">
+        <a href="#home" id="logo" class="logo">
+          <span class="logo-mark">FE</span>
+          <span class="logo-text">FreelanceEscrow</span>
+        </a>
+      </div>
+
+      <nav id="main-nav" class="main-nav" aria-label="Primary">
+        <ul class="nav-list">
+          <li><a href="#home" class="nav-link" id="nav-home">Home</a></li>
+          <li><a href="#browse-jobs" class="nav-link" id="nav-find-jobs">Find Jobs</a></li>
+          <li><a href="#post-job" class="nav-link" id="nav-post-job">Post a Job</a></li>
+          <li><a href="#dashboard" class="nav-link" id="nav-dashboard">Dashboard</a></li>
+          <li>
+            <a href="#messages" class="nav-link" id="nav-messages" aria-label="Messages and notifications">
+              Messages
+              <span id="notification-badge" class="notification-badge" aria-label="3 unread notifications">3</span>
+            </a>
+          </li>
+          <li><a href="#profile" class="nav-link" id="nav-profile">Profile</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-tools">
+        <form id="header-search-form" class="header-search" role="search" action="#browse-jobs">
+          <label for="header-search" class="visually-hidden">Search jobs and skills</label>
+          <input
+            type="search"
+            id="header-search"
+            class="search-input"
+            name="q"
+            placeholder="Search jobs or skills"
+          />
+          <button type="submit" id="header-search-submit" class="search-submit">Search</button>
+        </form>
+
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">
+          Theme
+        </button>
+
+        <button type="button" id="wallet-connect" class="wallet-connect">
+          Connect Wallet
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content" class="main-content">
+      <section id="home" class="hero-section" aria-labelledby="hero-heading">
+        <h1 id="hero-heading" class="hero-heading">Decentralized Freelance Escrow Platform</h1>
+        <p id="hero-description" class="hero-description">
+          Hire and work with confidence. One account can act as both client and freelancer.
+          Job payments are held in on-chain escrow until work is delivered and approved.
+        </p>
+        <div class="hero-actions">
+          <a href="#browse-jobs" id="cta-find-jobs" class="cta-primary">Find Jobs</a>
+          <a href="#post-job" id="cta-post-job" class="cta-secondary">Post a Job</a>
+        </div>
+        <form id="hero-search-form" class="hero-search" role="search" action="#browse-jobs">
+          <label for="hero-search" class="visually-hidden">Search jobs and skills</label>
+          <input
+            type="search"
+            id="hero-search"
+            class="search-input"
+            name="q"
+            placeholder="Search by job title or skill, e.g. Solidity, UI design"
+          />
+          <button type="submit" id="hero-search-submit" class="search-submit">Search</button>
+        </form>
+      </section>
+
+      <section id="recommended-jobs" class="recommended-jobs-section" aria-labelledby="recommended-heading">
+        <h2 id="recommended-heading" class="section-heading">Recommended for You</h2>
+        <p class="section-intro">Skill-matched jobs based on your freelancer profile.</p>
+
+        <div id="recommended-job-list" class="job-card-list">
+          <article class="job-card recommended-job-card" data-job-id="job-101">
+            <p class="match-percentage" aria-label="Skill match 92 percent">
+              <span class="match-value">92%</span> match
+            </p>
+            <h3 class="job-title">Smart Contract Audit for Escrow Module</h3>
+            <ul class="job-skills">
+              <li>Solidity</li>
+              <li>Security</li>
+              <li>Ethereum</li>
+            </ul>
+            <dl class="job-meta">
+              <dt>Budget</dt>
+              <dd>0.45 ETH</dd>
+              <dt>Deadline</dt>
+              <dd>18 Oct 2026</dd>
+              <dt>Client</dt>
+              <dd>
+                <span class="client-name">Asha Rao</span>
+                <span class="client-wallet">0x4f2A…91cE</span>
+              </dd>
+            </dl>
+            <div class="job-card-actions">
+              <a href="#job-101" class="btn-view-job">View Job</a>
+              <button type="button" class="btn-apply-job">Apply</button>
+            </div>
+          </article>
+
+          <article class="job-card recommended-job-card" data-job-id="job-102">
+            <p class="match-percentage" aria-label="Skill match 81 percent">
+              <span class="match-value">81%</span> match
+            </p>
+            <h3 class="job-title">Frontend Dashboard for Job Activity</h3>
+            <ul class="job-skills">
+              <li>HTML</li>
+              <li>CSS</li>
+              <li>JavaScript</li>
+            </ul>
+            <dl class="job-meta">
+              <dt>Budget</dt>
+              <dd>0.22 ETH</dd>
+              <dt>Deadline</dt>
+              <dd>05 Oct 2026</dd>
+              <dt>Client</dt>
+              <dd>
+                <span class="client-name">Marcus Lee</span>
+                <span class="client-wallet">0xA91b…33d0</span>
+              </dd>
+            </dl>
+            <div class="job-card-actions">
+              <a href="#job-102" class="btn-view-job">View Job</a>
+              <button type="button" class="btn-apply-job">Apply</button>
+            </div>
+          </article>
+
+          <article class="job-card recommended-job-card" data-job-id="job-103">
+            <p class="match-percentage" aria-label="Skill match 74 percent">
+              <span class="match-value">74%</span> match
+            </p>
+            <h3 class="job-title">Skill-Based Job Matching Helper</h3>
+            <ul class="job-skills">
+              <li>JavaScript</li>
+              <li>Data</li>
+              <li>Matching</li>
+            </ul>
+            <dl class="job-meta">
+              <dt>Budget</dt>
+              <dd>0.18 ETH</dd>
+              <dt>Deadline</dt>
+              <dd>12 Oct 2026</dd>
+              <dt>Client</dt>
+              <dd>
+                <span class="client-name">Priya Nair</span>
+                <span class="client-wallet">0x7c88…b12F</span>
+              </dd>
+            </dl>
+            <div class="job-card-actions">
+              <a href="#job-103" class="btn-view-job">View Job</a>
+              <button type="button" class="btn-apply-job">Apply</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="browse-jobs" class="browse-jobs-section" aria-labelledby="browse-heading">
+        <h2 id="browse-heading" class="section-heading">Browse Jobs</h2>
+
+        <form id="job-filter-form" class="job-filter-form">
+          <div class="filter-search">
+            <label for="job-search">Search jobs</label>
+            <input
+              type="search"
+              id="job-search"
+              class="search-input"
+              name="job-search"
+              placeholder="Title, skill, or keyword"
+            />
+          </div>
+
+          <fieldset class="filter-controls">
+            <legend>Filters</legend>
+
+            <div class="filter-field">
+              <label for="filter-category">Skill / Category</label>
+              <select id="filter-category" name="category">
+                <option value="">All categories</option>
+                <option value="blockchain">Blockchain</option>
+                <option value="frontend">Frontend</option>
+                <option value="backend">Backend</option>
+                <option value="design">Design</option>
+                <option value="writing">Writing</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filter-budget">Budget</label>
+              <select id="filter-budget" name="budget">
+                <option value="">Any budget</option>
+                <option value="0-0.1">Up to 0.1 ETH</option>
+                <option value="0.1-0.3">0.1 – 0.3 ETH</option>
+                <option value="0.3-1">0.3 – 1 ETH</option>
+                <option value="1+">1 ETH and above</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filter-deadline">Deadline</label>
+              <select id="filter-deadline" name="deadline">
+                <option value="">Any deadline</option>
+                <option value="7">Within 7 days</option>
+                <option value="14">Within 14 days</option>
+                <option value="30">Within 30 days</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label for="filter-job-type">Job type</label>
+              <select id="filter-job-type" name="job-type">
+                <option value="">All types</option>
+                <option value="one-time">One-time</option>
+                <option value="milestone">Milestone</option>
+                <option value="hourly">Hourly (off-chain estimate)</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <button type="submit" id="apply-filters" class="btn-apply-filters">Apply filters</button>
+        </form>
+
+        <div id="browse-job-list" class="job-card-list">
+          <article class="job-card browse-job-card" data-job-id="job-201" id="job-201">
+            <h3 class="job-title">Landing Page for Freelance Marketplace</h3>
+            <p class="job-description">Build a clean home page for profiles, jobs, and escrow status.</p>
+            <ul class="job-skills">
+              <li>HTML</li>
+              <li>CSS</li>
+              <li>Accessibility</li>
+            </ul>
+            <dl class="job-meta">
+              <dt>Category</dt>
+              <dd>Frontend</dd>
+              <dt>Budget</dt>
+              <dd>0.12 ETH</dd>
+              <dt>Deadline</dt>
+              <dd>08 Oct 2026</dd>
+              <dt>Job type</dt>
+              <dd>One-time</dd>
+              <dt>Status</dt>
+              <dd class="job-state">Created</dd>
+              <dt>Client</dt>
+              <dd>Noah Patel · 0x21aa…8f04</dd>
+            </dl>
+            <div class="job-card-actions">
+              <a href="#job-201" class="btn-view-job">View Job</a>
+              <button type="button" class="btn-apply-job">Apply</button>
+            </div>
+          </article>
+
+          <article class="job-card browse-job-card" data-job-id="job-202" id="job-202">
+            <h3 class="job-title">MetaMask Wallet Connect Flow</h3>
+            <p class="job-description">Wire wallet connection and display the connected address on the profile.</p>
+            <ul class="job-skills">
+              <li>JavaScript</li>
+              <li>MetaMask</li>
+              <li>ethers.js</li>
+            </ul>
+            <dl class="job-meta">
+              <dt>Category</dt>
+              <dd>Blockchain</dd>
+              <dt>Budget</dt>
+              <dd>0.28 ETH</dd>
+              <dt>Deadline</dt>
+              <dd>20 Oct 2026</dd>
+              <dt>Job type</dt>
+              <dd>One-time</dd>
+              <dt>Status</dt>
+              <dd class="job-state">Funded</dd>
+              <dt>Client</dt>
+              <dd>Elena Voss · 0x90c1…44ab</dd>
+            </dl>
+            <div class="job-card-actions">
+              <a href="#job-202" class="btn-view-job">View Job</a>
+              <button type="button" class="btn-apply-job">Apply</button>
+            </div>
+          </article>
+
+          <article class="job-card browse-job-card" data-job-id="job-203" id="job-203">
+            <h3 class="job-title">Cloud Profile and Job API</h3>
+            <p class="job-description">Store user profiles, jobs, and applications in the cloud data layer.</p>
+            <ul class="job-skills">
+              <li>Backend</li>
+              <li>REST</li>
+              <li>Database</li>
+            </ul>
+            <dl class="job-meta">
+              <dt>Category</dt>
+              <dd>Backend</dd>
+              <dt>Budget</dt>
+              <dd>0.35 ETH</dd>
+              <dt>Deadline</dt>
+              <dd>25 Oct 2026</dd>
+              <dt>Job type</dt>
+              <dd>Milestone</dd>
+              <dt>Status</dt>
+              <dd class="job-state">Created</dd>
+              <dt>Client</dt>
+              <dd>Jordan Kim · 0xbb12…70e9</dd>
+            </dl>
+            <div class="job-card-actions">
+              <a href="#job-203" class="btn-view-job">View Job</a>
+              <button type="button" class="btn-apply-job">Apply</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="post-job" class="post-job-section" aria-labelledby="post-job-heading">
+        <h2 id="post-job-heading" class="section-heading">Post a Job</h2>
+        <p class="section-intro">Clients create a job in the cloud. Escrow funding happens after a freelancer is selected.</p>
+
+        <form id="post-job-form" class="post-job-form">
+          <div class="form-field">
+            <label for="job-title">Job title</label>
+            <input type="text" id="job-title" name="title" required placeholder="e.g. Build escrow dashboard UI" />
+          </div>
+
+          <div class="form-field">
+            <label for="job-description">Description</label>
+            <textarea
+              id="job-description"
+              name="description"
+              rows="6"
+              required
+              placeholder="Describe the work, deliverables, and acceptance criteria"
+            ></textarea>
+          </div>
+
+          <div class="form-field">
+            <label for="job-skills">Required skills</label>
+            <input
+              type="text"
+              id="job-skills"
+              name="required_skills"
+              required
+              placeholder="Comma-separated, e.g. Solidity, JavaScript, HTML"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="job-category">Category</label>
+            <select id="job-category" name="category" required>
+              <option value="">Select a category</option>
+              <option value="blockchain">Blockchain</option>
+              <option value="frontend">Frontend</option>
+              <option value="backend">Backend</option>
+              <option value="design">Design</option>
+              <option value="writing">Writing</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="job-budget">Budget (test ETH)</label>
+            <input type="number" id="job-budget" name="budget" min="0" step="0.01" required placeholder="0.25" />
+          </div>
+
+          <div class="form-field">
+            <label for="job-deadline">Deadline</label>
+            <input type="date" id="job-deadline" name="deadline" required />
+          </div>
+
+          <button type="submit" id="post-job-submit" class="btn-post-job">Post Job</button>
+        </form>
+      </section>
+
+      <section id="dashboard" class="dashboard-section" aria-labelledby="dashboard-heading">
+        <h2 id="dashboard-heading" class="section-heading">Applications / Activity</h2>
+        <p class="section-intro">
+          Job states: Created → Funded → Accepted → Delivered → Completed. Disputed jobs follow a separate path.
+        </p>
+
+        <div class="dashboard-columns">
+          <section id="applied-jobs" class="activity-panel" aria-labelledby="applied-jobs-heading">
+            <h3 id="applied-jobs-heading">Applied jobs</h3>
+            <ul class="activity-list">
+              <li class="activity-item" data-job-id="job-101">
+                <span class="activity-title">Smart Contract Audit for Escrow Module</span>
+                <span class="job-state">Created</span>
+                <span class="activity-note">Application pending client review</span>
+              </li>
+              <li class="activity-item" data-job-id="job-203">
+                <span class="activity-title">Cloud Profile and Job API</span>
+                <span class="job-state">Created</span>
+                <span class="activity-note">Applied · waiting for selection</span>
+              </li>
+            </ul>
+          </section>
+
+          <section id="active-jobs" class="activity-panel" aria-labelledby="active-jobs-heading">
+            <h3 id="active-jobs-heading">Active jobs</h3>
+            <ul class="activity-list">
+              <li class="activity-item" data-job-id="job-301">
+                <span class="activity-title">Wallet Address Display on Profile</span>
+                <span class="job-state">Funded</span>
+                <span class="activity-role">Role: Freelancer</span>
+                <span class="activity-note">Awaiting freelancer accept</span>
+              </li>
+              <li class="activity-item" data-job-id="job-302">
+                <span class="activity-title">Job Listing Cards and Filters</span>
+                <span class="job-state">Accepted</span>
+                <span class="activity-role">Role: Freelancer</span>
+                <span class="activity-note">Work in progress</span>
+              </li>
+              <li class="activity-item" data-job-id="job-303">
+                <span class="activity-title">Escrow Status Panel Copy</span>
+                <span class="job-state">Delivered</span>
+                <span class="activity-role">Role: Client</span>
+                <span class="activity-note">Work submitted · pending approval</span>
+              </li>
+            </ul>
+          </section>
+
+          <section id="completed-jobs" class="activity-panel" aria-labelledby="completed-jobs-heading">
+            <h3 id="completed-jobs-heading">Completed jobs</h3>
+            <ul class="activity-list">
+              <li class="activity-item" data-job-id="job-401">
+                <span class="activity-title">Platform Logo and Header Layout</span>
+                <span class="job-state">Completed</span>
+                <span class="activity-note">Payment released to freelancer</span>
+              </li>
+              <li class="activity-item" data-job-id="job-402">
+                <span class="activity-title">About Page Draft</span>
+                <span class="job-state">Completed</span>
+                <span class="activity-note">Closed as client</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </section>
+
+      <section id="escrow-status" class="escrow-status-section" aria-labelledby="escrow-heading">
+        <h2 id="escrow-heading" class="section-heading">Escrow Status</h2>
+        <p class="section-intro">Placeholder values for an example job. Live data will come from the smart contract later.</p>
+
+        <article id="escrow-example" class="escrow-card" data-job-id="job-303">
+          <h3 class="escrow-job-title">Escrow Status Panel Copy</h3>
+          <p class="job-state-row">Current job state: <span class="job-state">Delivered</span></p>
+
+          <dl class="escrow-details">
+            <dt>Escrow amount</dt>
+            <dd id="escrow-amount">0.15 ETH</dd>
+
+            <dt>Funding status</dt>
+            <dd id="escrow-funding-status">Funded</dd>
+
+            <dt>Work submission status</dt>
+            <dd id="escrow-submission-status">Delivered — work submitted</dd>
+
+            <dt>Payment approval status</dt>
+            <dd id="escrow-approval-status">Pending client approval</dd>
+
+            <dt>Transaction status</dt>
+            <dd id="escrow-tx-status">
+              Last tx: Fund escrow · confirmed
+              <span class="tx-hash">0x8e1c…a44b</span>
+            </dd>
+          </dl>
+
+          <div class="escrow-actions">
+            <button type="button" id="btn-fund-escrow" class="btn-escrow">Fund</button>
+            <button type="button" id="btn-submit-work" class="btn-escrow">Submit</button>
+            <button type="button" id="btn-approve-payment" class="btn-escrow">Approve</button>
+            <button type="button" id="btn-raise-dispute" class="btn-escrow">Dispute</button>
+          </div>
+        </article>
+      </section>
+
+      <section id="dispute" class="dispute-section" aria-labelledby="dispute-heading">
+        <h2 id="dispute-heading" class="section-heading">Dispute</h2>
+        <p class="section-intro">
+          Structure only. Jury voting and settlement will be handled later by authorized jury members and the contract.
+        </p>
+
+        <article id="dispute-example" class="dispute-card" data-job-id="job-501">
+          <h3 class="dispute-job-title">Example disputed job: Milestone delivery mismatch</h3>
+
+          <dl class="dispute-details">
+            <dt>Raise dispute</dt>
+            <dd>
+              <form id="raise-dispute-form" class="raise-dispute-form">
+                <label for="dispute-reason">Reason</label>
+                <textarea id="dispute-reason" name="reason" rows="3" placeholder="Describe the issue"></textarea>
+                <button type="submit" id="btn-submit-dispute">Raise dispute</button>
+              </form>
+            </dd>
+
+            <dt>Dispute status</dt>
+            <dd id="dispute-status"><span class="job-state">Disputed</span></dd>
+
+            <dt>Jury / arbitration status</dt>
+            <dd id="jury-status">Jury Voting — authorized members assigned; votes pending</dd>
+
+            <dt>Resolution result</dt>
+            <dd id="dispute-resolution">Unresolved — awaiting majority decision (Release / Refund)</dd>
+          </dl>
+        </article>
+      </section>
+
+      <section id="profile" class="profile-section" aria-labelledby="profile-heading">
+        <h2 id="profile-heading" class="section-heading">Profile</h2>
+        <p class="section-intro">A single account can participate as both Client and Freelancer.</p>
+
+        <article id="user-profile" class="profile-card">
+          <h3 id="profile-display-name" class="profile-display-name">Jeeban</h3>
+
+          <dl class="profile-details">
+            <dt>Role(s)</dt>
+            <dd id="profile-roles">
+              <span class="role-badge">Client</span>
+              <span class="role-badge">Freelancer</span>
+            </dd>
+
+            <dt>Skills</dt>
+            <dd id="profile-skills">HTML, CSS, JavaScript, Solidity</dd>
+
+            <dt>Experience</dt>
+            <dd id="profile-experience">2 years — web apps and academic blockchain prototypes</dd>
+
+            <dt>Category</dt>
+            <dd id="profile-category">Blockchain / Frontend</dd>
+
+            <dt>Wallet address</dt>
+            <dd id="profile-wallet">0x0000…0000 (not connected)</dd>
+          </dl>
+
+          <button type="button" id="btn-edit-profile" class="btn-edit-profile">Edit Profile</button>
+        </article>
+      </section>
+
+      <section id="messages" class="messages-section" aria-labelledby="messages-heading">
+        <h2 id="messages-heading" class="section-heading">Messages / Notifications</h2>
+        <p class="section-intro">Placeholder inbox. Messaging is not implemented yet.</p>
+        <ul id="notification-list" class="notification-list">
+          <li>Client selected you for Job Listing Cards and Filters.</li>
+          <li>Escrow funded for Wallet Address Display on Profile.</li>
+          <li>Work submitted on Escrow Status Panel Copy — awaiting approval.</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer id="site-footer" class="site-footer">
+      <p class="footer-brand">FreelanceEscrow</p>
+      <nav class="footer-nav" aria-label="Footer">
+        <ul class="footer-links">
+          <li><a href="#about" id="footer-about">About</a></li>
+          <li><a href="#documentation" id="footer-docs">Documentation</a></li>
+          <li><a href="https://github.com" id="footer-github">GitHub</a></li>
+          <li><a href="#terms" id="footer-terms">Terms</a></li>
+          <li><a href="#privacy" id="footer-privacy">Privacy</a></li>
+        </ul>
+      </nav>
+      <p class="footer-note">Academic prototype. Escrow uses test ETH on an Ethereum-compatible test network.</p>
+    </footer>
+    <script src="js/script.js"></script>
+  </body>
+</html>

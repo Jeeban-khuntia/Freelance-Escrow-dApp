@@ -2,8 +2,7 @@
 // FreelanceEscrow - Frontend JavaScript
 // ============================================
 
-document.addEventListener("DOMContentLoaded", () => {
-  // ==========================================
+document.addEventListener("DOMContentLoaded", async () => {  // ==========================================
   // 1. THEME TOGGLE
   // ==========================================
 
@@ -109,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // Show applicants and selection controls for the client
         if (
-            job.clientId === "demo-client" &&
+            job.clientId === connectedWallet &&
             Array.isArray(job.applications) &&
             job.applications.length > 0
         ) {
@@ -346,6 +345,11 @@ browseJobList.addEventListener("click", async (event) => {
 
     const jobId = card.dataset.jobId || card.id;
 
+    if (!connectedWallet) {
+    alert("Please connect your MetaMask wallet before applying.");
+    return;
+    }
+
     try {
         button.disabled = true;
         button.textContent = "Applying...";
@@ -358,8 +362,7 @@ browseJobList.addEventListener("click", async (event) => {
             body: JSON.stringify({
                 action: "apply",
                 jobId: jobId,
-                freelancerId: "demo-freelancer"
-            })
+                freelancerId: connectedWallet            })
         });
 
         const result = await response.json();
@@ -421,6 +424,11 @@ browseJobList.addEventListener("click", async (event) => {
       return;
     }
 
+    if (!connectedWallet) {
+    alert("Please connect your MetaMask wallet before posting a job.");
+    return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/jobs`, {
         method: "POST",
@@ -437,8 +445,7 @@ browseJobList.addEventListener("click", async (event) => {
           budget: Number(budget),
           jobType: "One-time",
           deadline: deadline,
-          clientId: "demo-client"
-        })
+          clientId: connectedWallet        })
       });
 
       const result = await response.json();
@@ -551,17 +558,83 @@ browseJobList.addEventListener("click", async (event) => {
     );
   });
 
-  // ==========================================
-  // 11. WALLET PLACEHOLDER
-  // ==========================================
+// ==========================================
+// 11. METAMASK WALLET CONNECTION
+// ==========================================
 
-  const walletButton = document.getElementById("wallet-connect");
+const walletButton = document.getElementById("wallet-connect");
 
-  walletButton.addEventListener("click", () => {
-    alert(
-      "MetaMask wallet connection will be implemented in the next blockchain integration step.",
-    );
-  });
+let connectedWallet = null;
+
+function updateConnectedWallet(address) {
+    if (!address) {
+        connectedWallet = null;
+        walletButton.textContent = "Connect Wallet";
+        return;
+    }
+
+    connectedWallet = address;
+
+    const shortAddress =
+        address.slice(0, 6) +
+        "..." +
+        address.slice(-4);
+
+    walletButton.textContent = shortAddress;
+
+    console.log("Connected wallet:", connectedWallet);
+}
+
+async function connectWallet() {
+    if (!window.ethereum) {
+        alert("MetaMask is not installed.");
+        return;
+    }
+
+    try {
+        const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts"
+        });
+
+        updateConnectedWallet(accounts[0]);
+
+    } catch (error) {
+        console.error("Wallet connection failed:", error);
+        alert("Unable to connect MetaMask.");
+    }
+}
+
+// Connect wallet button
+walletButton.addEventListener("click", connectWallet);
+
+// Detect account changes while the page is open
+window.ethereum?.on("accountsChanged", async (accounts) => {
+    updateConnectedWallet(accounts[0]);
+
+    // Reload jobs for the newly selected wallet
+    await loadJobsFromAPI();
+});
+
+// Detect the currently selected account when the page loads
+async function loadConnectedWallet() {
+    if (!window.ethereum) {
+        return;
+    }
+
+    try {
+        const accounts = await window.ethereum.request({
+            method: "eth_accounts"
+        });
+
+        if (accounts.length > 0) {
+            updateConnectedWallet(accounts[0]);
+        }
+    } catch (error) {
+        console.error("Unable to detect connected wallet:", error);
+    }
+}
+
+loadConnectedWallet();
 
   // ==========================================
   // 12. EDIT PROFILE PLACEHOLDER
@@ -574,6 +647,10 @@ browseJobList.addEventListener("click", async (event) => {
   });
 
     // Load jobs from AWS when the page opens
-  loadJobsFromAPI();
-  console.log("FreelanceEscrow frontend JavaScript loaded successfully.");
+  // Load jobs from AWS when the page opens
+
+await loadConnectedWallet();
+await loadJobsFromAPI();
+
+console.log("FreelanceEscrow frontend JavaScript loaded successfully.");
 });

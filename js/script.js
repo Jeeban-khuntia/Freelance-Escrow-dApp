@@ -81,6 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement("article");
 
         card.className = "browse-job-card";
+        card.dataset.jobId = job.jobId;
+        card.id = job.jobId;
 
         card.innerHTML = `
           <div>
@@ -244,26 +246,60 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ==========================================
-  // 7. APPLY BUTTONS
-  // ==========================================
+// 7. APPLY BUTTONS
+// ==========================================
 
-   // Event delegation keeps Apply working for AWS-loaded jobs.
-  browseJobList.addEventListener("click", (event) => {
+browseJobList.addEventListener("click", async (event) => {
     const button = event.target.closest(".btn-apply-job");
 
     if (!button) {
-      return;
+        return;
     }
 
-    if (button.dataset.applied === "true") {
-      return;
+    const card = button.closest(".browse-job-card");
+
+    if (!card) {
+        return;
     }
 
-    button.dataset.applied = "true";
-    button.textContent = "Applied";
-    button.disabled = true;
-    button.style.opacity = "0.7";
-  });
+    const jobId = card.dataset.jobId || card.id;
+
+    try {
+        button.disabled = true;
+        button.textContent = "Applying...";
+
+        const response = await fetch(`${API_URL}/jobs`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                action: "apply",
+                jobId: jobId,
+                freelancerId: "demo-freelancer"
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Failed to apply");
+        }
+
+        button.textContent = "Applied";
+        button.dataset.applied = "true";
+        button.style.opacity = "0.7";
+
+        alert("Application submitted successfully!");
+    } catch (error) {
+        console.error("Error applying for job:", error);
+
+        button.disabled = false;
+        button.textContent = "Apply";
+
+        alert("Unable to submit application.");
+    }
+});
 
   // ==========================================
   // 8. POST JOB FORM

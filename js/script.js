@@ -164,6 +164,19 @@ document.addEventListener("DOMContentLoaded", async () => {  // ================
                             );
                         }
 
+                        // Remember the selected job for blockchain escrow
+                          localStorage.setItem(
+                              "escrowActiveJob",
+                              JSON.stringify({
+                                  jobId: job.jobId,
+                                  title: job.title,
+                                  budget: job.budget,
+                                  deadline: job.deadline,
+                                  clientId: job.clientId,
+                                  freelancerId: application.freelancerId
+                              })
+                          );
+
                         alert("Freelancer selected successfully!");
 
                         await loadJobsFromAPI();
@@ -482,6 +495,62 @@ browseJobList.addEventListener("click", async (event) => {
   // ==========================================
 
   const fundButton = document.getElementById("btn-fund-escrow");
+  // ==========================================
+// BLOCKCHAIN CONTRACT CONNECTION
+// ==========================================
+
+const CONTRACT_ADDRESS =
+    "0xc76bF490373A358eDAFC49c9D925Ee6A7d4aBAc1";
+
+const CONTRACT_ABI = [
+    "function owner() view returns (address)",
+    "function getBalance() view returns (uint256)",
+
+    "function createJob(uint256 budget, uint256 deadline, string title) returns (uint256)",
+    "function selectFreelancer(uint256 jobId, address freelancer)",
+    "function fundJob(uint256 jobId) payable",
+
+    "function getJob(uint256 jobId) view returns (uint256,address,address,uint256,uint256,string,uint8,bool)"
+];
+
+let contract = null;
+let blockchainProvider = null;
+let blockchainSigner = null;
+
+async function getContract() {
+    if (!window.ethereum) {
+        throw new Error("MetaMask is not installed.");
+    }
+
+    blockchainProvider = new ethers.BrowserProvider(window.ethereum);
+
+    blockchainSigner = await blockchainProvider.getSigner();
+
+    contract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        CONTRACT_ABI,
+        blockchainSigner
+    );
+
+    return contract;
+}
+
+  // Test blockchain connection
+async function testContractConnection() {
+    try {
+        const connectedContract = await getContract();
+
+        const ownerAddress = await connectedContract.owner();
+
+        console.log("Smart contract connected successfully.");
+        console.log("Contract owner:", ownerAddress);
+
+    } catch (error) {
+        console.error("Smart contract connection failed:", error);
+    }
+}
+
+testContractConnection();
 
   const submitButton = document.getElementById("btn-submit-work");
 

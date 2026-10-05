@@ -59,6 +59,61 @@ document.addEventListener("DOMContentLoaded", () => {
   const browseSearch = document.getElementById("job-search");
   const browseJobList = document.getElementById("browse-job-list");
 
+    // AWS API
+  const API_URL =
+  "https://g4ol2tmae2b7kb4ooaucc5zdq40igkhn.lambda-url.ap-south-1.on.aws";
+
+  // Load jobs from AWS
+  async function loadJobsFromAPI() {
+    try {
+      const response = await fetch(`${API_URL}/jobs`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load jobs");
+      }
+
+      const jobs = await response.json();
+
+      // Clear current hardcoded jobs
+      browseJobList.innerHTML = "";
+
+      jobs.forEach((job) => {
+        const card = document.createElement("article");
+
+        card.className = "browse-job-card";
+
+        card.innerHTML = `
+          <div>
+            <h3>${job.title}</h3>
+            <p>${job.description}</p>
+            <p>
+              <strong>Category:</strong> ${job.category}
+            </p>
+            <p>
+              <strong>Budget:</strong> ${job.budget} ETH
+            </p>
+            <p>
+              <strong>Job Type:</strong> ${job.jobType}
+            </p>
+            <p>
+              <strong>Deadline:</strong> ${job.deadline || "Not specified"}
+            </p>
+          </div>
+
+          <button class="btn-apply-job" type="button">
+            Apply
+          </button>
+        `;
+
+        browseJobList.appendChild(card);
+      });
+
+    } catch (error) {
+      console.error("Error loading jobs:", error);
+      alert("Unable to load jobs from the cloud.");
+    }
+  }
+
   function searchJobs(searchTerm) {
     const jobs = browseJobList.querySelectorAll(".browse-job-card");
 
@@ -192,19 +247,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // 7. APPLY BUTTONS
   // ==========================================
 
-  document.querySelectorAll(".btn-apply-job").forEach((button) => {
-    button.addEventListener("click", () => {
-      if (button.dataset.applied === "true") {
-        return;
-      }
+   // Event delegation keeps Apply working for AWS-loaded jobs.
+  browseJobList.addEventListener("click", (event) => {
+    const button = event.target.closest(".btn-apply-job");
 
-      button.dataset.applied = "true";
+    if (!button) {
+      return;
+    }
 
-      button.textContent = "Applied";
-      button.disabled = true;
+    if (button.dataset.applied === "true") {
+      return;
+    }
 
-      button.style.opacity = "0.7";
-    });
+    button.dataset.applied = "true";
+    button.textContent = "Applied";
+    button.disabled = true;
+    button.style.opacity = "0.7";
   });
 
   // ==========================================
@@ -213,20 +271,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const postJobForm = document.getElementById("post-job-form");
 
-  postJobForm.addEventListener("submit", (event) => {
+    postJobForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const title = document.getElementById("job-title").value.trim();
 
-    const description = document.getElementById("job-description").value.trim();
+    const description =
+      document.getElementById("job-description").value.trim();
 
-    const skills = document.getElementById("job-skills").value.trim();
+    const skills =
+      document.getElementById("job-skills").value.trim();
 
-    const category = document.getElementById("job-category").value;
+    const category =
+      document.getElementById("job-category").value;
 
-    const budget = document.getElementById("job-budget").value;
+    const budget =
+      document.getElementById("job-budget").value;
 
-    const deadline = document.getElementById("job-deadline").value;
+    const deadline =
+      document.getElementById("job-deadline").value;
 
     if (
       !title ||
@@ -240,14 +303,53 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    alert(
-      `Job created successfully!\n\n` +
-        `Title: ${title}\n` +
-        `Category: ${category}\n` +
-        `Budget: ${budget} ETH`,
-    );
+    try {
+      const response = await fetch(`${API_URL}/jobs`, {
+        method: "POST",
 
-    postJobForm.reset();
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          title: title,
+          description: description,
+          skills: skills,
+          category: category,
+          budget: Number(budget),
+          jobType: "One-time",
+          deadline: deadline,
+          clientId: "demo-client"
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to create job"
+        );
+      }
+
+      alert(
+        `Job created successfully!\n\n` +
+        `Title: ${result.title}\n` +
+        `Category: ${result.category}\n` +
+        `Budget: ${result.budget} ETH`
+      );
+
+      postJobForm.reset();
+
+      // Reload jobs from AWS
+      await loadJobsFromAPI();
+
+    } catch (error) {
+      console.error("Error creating job:", error);
+
+      alert(
+        "Unable to create the job. Please try again."
+      );
+    }
   });
 
   // ==========================================
@@ -353,5 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Profile editing will be connected to the cloud database later.");
   });
 
+    // Load jobs from AWS when the page opens
+  loadJobsFromAPI();
   console.log("FreelanceEscrow frontend JavaScript loaded successfully.");
 });

@@ -107,6 +107,88 @@ document.addEventListener("DOMContentLoaded", () => {
           </button>
         `;
 
+                // Show applicants and selection controls for the client
+        if (
+            job.clientId === "demo-client" &&
+            Array.isArray(job.applications) &&
+            job.applications.length > 0
+        ) {
+            const applicationsBox = document.createElement("div");
+            applicationsBox.className = "job-applications";
+
+            const applicationsTitle = document.createElement("strong");
+            applicationsTitle.textContent = "Applicants:";
+            applicationsBox.appendChild(applicationsTitle);
+
+            job.applications.forEach((application) => {
+                const applicantRow = document.createElement("div");
+                applicantRow.className = "applicant-row";
+
+                const applicantName = document.createElement("span");
+                applicantName.textContent =
+                    application.freelancerId || "Unknown freelancer";
+
+                const selectButton = document.createElement("button");
+                selectButton.type = "button";
+                selectButton.className = "btn-select-freelancer";
+                selectButton.textContent =
+                    job.selectedFreelancer === application.freelancerId
+                        ? "Selected"
+                        : "Select";
+
+                if (job.selectedFreelancer === application.freelancerId) {
+                    selectButton.disabled = true;
+                }
+
+                selectButton.addEventListener("click", async () => {
+                    try {
+                        selectButton.disabled = true;
+                        selectButton.textContent = "Selecting...";
+
+                        const response = await fetch(`${API_URL}/jobs`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                action: "select",
+                                jobId: job.jobId,
+                                freelancerId: application.freelancerId
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(
+                                result.message || "Failed to select freelancer"
+                            );
+                        }
+
+                        alert("Freelancer selected successfully!");
+
+                        await loadJobsFromAPI();
+                    } catch (error) {
+                        console.error(
+                            "Error selecting freelancer:",
+                            error
+                        );
+
+                        selectButton.disabled = false;
+                        selectButton.textContent = "Select";
+
+                        alert("Unable to select freelancer.");
+                    }
+                });
+
+                applicantRow.appendChild(applicantName);
+                applicantRow.appendChild(selectButton);
+                applicationsBox.appendChild(applicantRow);
+            });
+
+            card.appendChild(applicationsBox);
+        }
+
         browseJobList.appendChild(card);
       });
 

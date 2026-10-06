@@ -1366,3 +1366,7 @@ textarea {
     transform: none;
   }
 }
+/* Hide elements marked as hidden */
+[hidden] {
+    display: none !important;
+}

@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {  // ================
   "https://g4ol2tmae2b7kb4ooaucc5zdq40igkhn.lambda-url.ap-south-1.on.aws";
 
   // Load jobs from AWS
-  async function loadJobsFromAPI() {
+  async function loadJobsFromAPI() {  
     try {
       const response = await fetch(`${API_URL}/jobs`);
 
@@ -206,11 +206,502 @@ document.addEventListener("DOMContentLoaded", async () => {  // ================
         browseJobList.appendChild(card);
       });
 
+      await loadRecommendedJobs(jobs);
+      await loadDashboard(jobs);
+      await loadNotifications(jobs);
+
     } catch (error) {
       console.error("Error loading jobs:", error);
       alert("Unable to load jobs from the cloud.");
     }
   }
+  // ==========================================
+// LOAD SAVED WORK SUBMISSION
+// ==========================================
+
+async function loadSavedSubmission() { 
+  try {
+    const savedJob = localStorage.getItem("escrowActiveJob");
+
+    if (!savedJob) {
+      return;
+    }
+
+    const activeJob = JSON.parse(savedJob);
+
+    if (!activeJob.jobId) {
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/jobs`);
+
+    if (!response.ok) {
+      throw new Error("Failed to load submission data.");
+    }
+
+    const jobs = await response.json();
+
+    const cloudJob = jobs.find(
+      (job) => job.jobId === activeJob.jobId
+    );
+
+    if (!cloudJob) {
+      return;
+    }
+
+    // No submission saved yet
+    if (!cloudJob.submissionDescription) {
+      return;
+    }
+
+    // Show submitted work
+    const submissionView =
+      document.getElementById("work-submission-view");
+
+    submissionView.hidden = false;
+
+    document.getElementById(
+      "submitted-work-description"
+    ).textContent =
+      cloudJob.submissionDescription;
+
+    const submittedLink =
+      document.getElementById("submitted-work-link");
+
+    if (cloudJob.submissionLink) {
+      submittedLink.href = cloudJob.submissionLink;
+      submittedLink.textContent = cloudJob.submissionLink;
+    } else {
+      submittedLink.removeAttribute("href");
+      submittedLink.textContent = "No link provided";
+    }
+
+    document.getElementById(
+      "submitted-work-notes"
+    ).textContent =
+      cloudJob.submissionNotes || "No additional notes.";
+
+    document.getElementById(
+      "submitted-work-time"
+    ).textContent =
+      cloudJob.submittedAt
+        ? new Date(cloudJob.submittedAt).toLocaleString()
+        : "Time not available";
+
+    // Keep the submission form available only before submission
+    if (cloudJob.submissionDescription) {
+      submissionForm.hidden = true;
+    }
+
+    // Update escrow status text
+    submissionStatus.textContent =
+      "Delivered — work submitted";
+
+  } catch (error) {
+    console.error(
+      "Error loading saved submission:",
+      error
+    );
+  }
+}
+
+// ==========================================
+// 3B. RECOMMENDED JOBS
+// ==========================================
+
+const recommendedJobList =
+    document.getElementById("recommended-job-list");
+
+function normalizeSkills(value) {
+    return String(value || "")
+        .toLowerCase()
+        .split(/[,;|]/)
+        .map(skill => skill.trim())
+        .filter(Boolean);
+}
+
+async function loadRecommendedJobs(jobs) {
+    try {
+        recommendedJobList.innerHTML = "";
+
+        if (!connectedWallet) {
+            recommendedJobList.innerHTML =
+                "<p class=\"section-intro\">Connect your wallet to see recommended jobs.</p>";
+            return;
+        }
+
+        // Get freelancer profile from DynamoDB
+        const profileResponse = await fetch(`${API_URL}/jobs`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                action: "getProfile",
+                walletAddress: connectedWallet
+            })
+        });
+
+        if (profileResponse.status === 404) {
+            recommendedJobList.innerHTML =
+                "<p class=\"section-intro\">Complete your profile to get job recommendations.</p>";
+            return;
+        }
+
+        const profile = await profileResponse.json();
+
+        if (!profileResponse.ok) {
+            throw new Error(
+                profile.message || "Unable to load profile."
+            );
+        }
+
+        const userSkills = normalizeSkills(profile.skills);
+
+        if (userSkills.length === 0) {
+            recommendedJobList.innerHTML =
+                "<p class=\"section-intro\">Add skills to your profile to get recommendations.</p>";
+            return;
+        }
+
+        const recommendations = jobs
+            .filter(job =>
+                job.clientId?.toLowerCase() !== connectedWallet.toLowerCase()
+            )
+            .map(job => {
+                const jobSkills = normalizeSkills(job.skills);
+
+                const matchingSkills = jobSkills.filter(skill =>
+                    userSkills.includes(skill)
+                );
+
+                const matchScore =
+                    jobSkills.length > 0
+                        ? Math.round(
+                              (matchingSkills.length / jobSkills.length) * 100
+                          )
+                        : 0;
+
+                return {
+                    job,
+                    matchingSkills,
+                    matchScore
+                };
+            })
+            .filter(item => item.matchScore > 0)
+            .sort((a, b) => b.matchScore - a.matchScore)
+            .slice(0, 5);
+
+        if (recommendations.length === 0) {
+            recommendedJobList.innerHTML =
+                "<p class=\"section-intro\">No jobs currently match your skills.</p>";
+            return;
+        }
+
+        recommendations.forEach(({ job, matchingSkills, matchScore }) => {
+            const card = document.createElement("article");
+
+            card.className = "job-card recommended-job-card";
+            card.dataset.jobId = job.jobId;
+
+            card.innerHTML = `
+                <p class="match-percentage" aria-label="Skill match ${matchScore} percent">
+                    <span class="match-value">${matchScore}%</span> match
+                </p>
+
+                <h3 class="job-title">${job.title}</h3>
+
+                <p>${job.description}</p>
+
+                <p>
+                    <strong>Matching skills:</strong>
+                    ${matchingSkills.join(", ")}
+                </p>
+
+                <p>
+                    <strong>Skills required:</strong>
+                    ${job.skills || "Not specified"}
+                </p>
+
+                <dl class="job-meta">
+                    <dt>Category</dt>
+                    <dd>${job.category || "Not specified"}</dd>
+
+                    <dt>Budget</dt>
+                    <dd>${job.budget} ETH</dd>
+
+                    <dt>Deadline</dt>
+                    <dd>${job.deadline || "Not specified"}</dd>
+                </dl>
+
+                <div class="job-card-actions">
+                    <a href="#${job.jobId}" class="btn-view-job">
+                        View Job
+                    </a>
+                </div>
+            `;
+
+            recommendedJobList.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error("Error loading recommendations:", error);
+
+        recommendedJobList.innerHTML =
+            "<p class=\"section-intro\">Unable to load recommendations.</p>";
+    }
+}
+
+// ==========================================
+// 3C. DASHBOARD
+// ==========================================
+
+const appliedJobsList = document.getElementById("applied-jobs-list");
+const activeJobsList = document.getElementById("active-jobs-list");
+const completedJobsList = document.getElementById("completed-jobs-list");
+
+function getJobStateName(state) {
+    const states = [
+        "Created",
+        "Funded",
+        "Accepted",
+        "Delivered",
+        "Completed",
+        "Disputed",
+        "Resolved"
+    ];
+
+    return states[Number(state)] || "Unknown";
+}
+
+function addDashboardItem(list, job, state, role, note) {
+    const item = document.createElement("li");
+
+    item.className = "activity-item";
+
+    item.innerHTML = `
+        <span class="activity-title">${job.title}</span>
+        <span class="job-state">${state}</span>
+        <span class="activity-role">Role: ${role}</span>
+        <span class="activity-note">${note}</span>
+    `;
+
+    list.appendChild(item);
+}
+
+async function loadDashboard(jobs) {
+    appliedJobsList.innerHTML = "";
+    activeJobsList.innerHTML = "";
+    completedJobsList.innerHTML = "";
+
+    if (!connectedWallet) {
+        appliedJobsList.innerHTML =
+            "<li class=\"activity-item\">Connect your wallet to view dashboard activity.</li>";
+        return;
+    }
+
+    const wallet = connectedWallet.toLowerCase();
+
+    for (const job of jobs) {
+        let blockchainState = null;
+
+        // Read blockchain state when a job has a blockchain ID
+        if (job.blockchainJobId) {
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+
+                const readOnlyContract = new ethers.Contract(
+                    CONTRACT_ADDRESS,
+                    [
+                        "function getJob(uint256 jobId) view returns (uint256,address,address,uint256,uint256,string,uint8)"
+                    ],
+                    provider
+                );
+
+                const chainJob = await readOnlyContract.getJob(
+                    job.blockchainJobId
+                );
+
+                blockchainState = Number(chainJob[6]);
+            } catch (error) {
+                console.warn(
+                    "Unable to read blockchain state for",
+                    job.jobId,
+                    error
+                );
+            }
+        }
+
+        const stateName =
+            blockchainState !== null
+                ? getJobStateName(blockchainState)
+                : (job.status || "Created");
+
+        const isApplicant =
+            Array.isArray(job.applications) &&
+            job.applications.some(
+                application =>
+                    application.freelancerId?.toLowerCase() === wallet
+            );
+
+        const isSelectedFreelancer =
+            job.selectedFreelancer?.toLowerCase() === wallet;
+
+        const isClient =
+            job.clientId?.toLowerCase() === wallet;
+
+        // Applied jobs
+        if (isApplicant && !isSelectedFreelancer) {
+            addDashboardItem(
+                appliedJobsList,
+                job,
+                stateName,
+                "Freelancer",
+                "Application submitted — waiting for client selection"
+            );
+        }
+
+        // Completed / resolved jobs
+        if (
+            (stateName === "Completed" || stateName === "Resolved") &&
+            (isClient || isSelectedFreelancer)
+        ) {
+            addDashboardItem(
+                completedJobsList,
+                job,
+                stateName,
+                isClient ? "Client" : "Freelancer",
+                stateName === "Resolved"
+                    ? "Dispute resolved on blockchain"
+                    : "Payment completed"
+            );
+        }
+
+        // Active jobs
+        if (
+            stateName !== "Completed" &&
+            stateName !== "Resolved" &&
+            (isClient || isSelectedFreelancer)
+        ) {
+            addDashboardItem(
+                activeJobsList,
+                job,
+                stateName,
+                isClient ? "Client" : "Freelancer",
+                isSelectedFreelancer
+                    ? "Selected freelancer — work in progress"
+                    : "Client-side job activity"
+            );
+        }
+    }
+
+    // Empty-state messages
+    if (!appliedJobsList.children.length) {
+        appliedJobsList.innerHTML =
+            "<li class=\"activity-item\">No applied jobs yet.</li>";
+    }
+
+    if (!activeJobsList.children.length) {
+        activeJobsList.innerHTML =
+            "<li class=\"activity-item\">No active jobs yet.</li>";
+    }
+
+    if (!completedJobsList.children.length) {
+        completedJobsList.innerHTML =
+            "<li class=\"activity-item\">No completed jobs yet.</li>";
+    }
+}
+
+// ==========================================
+// 3D. NOTIFICATIONS
+// ==========================================
+
+const notificationList = document.getElementById("notification-list");
+
+function addNotification(message) {
+    const item = document.createElement("li");
+    item.textContent = message;
+    notificationList.appendChild(item);
+}
+
+async function loadNotifications(jobs) {
+    notificationList.innerHTML = "";
+
+    if (!connectedWallet) {
+        addNotification("Connect your wallet to view notifications.");
+        return;
+    }
+
+    const wallet = connectedWallet.toLowerCase();
+    let notificationCount = 0;
+
+    for (const job of jobs) {
+        const isClient =
+            job.clientId?.toLowerCase() === wallet;
+
+        const isSelectedFreelancer =
+            job.selectedFreelancer?.toLowerCase() === wallet;
+
+        const isApplicant =
+            Array.isArray(job.applications) &&
+            job.applications.some(
+                application =>
+                    application.freelancerId?.toLowerCase() === wallet
+            );
+
+        // Freelancer applied
+        if (isApplicant) {
+            addNotification(
+                `Application submitted for "${job.title}".`
+            );
+            notificationCount++;
+        }
+
+        // Client selected freelancer
+        if (isSelectedFreelancer) {
+            addNotification(
+                `You were selected for "${job.title}".`
+            );
+            notificationCount++;
+        }
+
+        // Client funded escrow
+        if (isClient && job.blockchainFunded) {
+            addNotification(
+                `Escrow funded for "${job.title}".`
+            );
+            notificationCount++;
+        }
+
+        // Work submitted to client
+        if (
+            isClient &&
+            job.submission &&
+            job.submission.description
+        ) {
+            addNotification(
+                `Work submitted for "${job.title}" — awaiting your approval.`
+            );
+            notificationCount++;
+        }
+
+        // Completed/resolved
+        if (
+            (job.status === "completed" ||
+             job.status === "resolved") &&
+            (isClient || isSelectedFreelancer)
+        ) {
+            addNotification(
+                `"${job.title}" has been completed/resolved.`
+            );
+            notificationCount++;
+        }
+    }
+
+    if (notificationCount === 0) {
+        addNotification("No new notifications.");
+    }
+}
 
   function searchJobs(searchTerm) {
     const jobs = browseJobList.querySelectorAll(".browse-job-card");
@@ -583,6 +1074,7 @@ async function testContractConnection() {
 testContractConnection();
 
 const submitButton = document.getElementById("btn-submit-work");
+const submissionForm = document.getElementById("work-submission-form");
 
 const approveButton = document.getElementById("btn-approve-payment");
 
@@ -874,7 +1366,9 @@ acceptButton.addEventListener("click", async () => {
 // SUBMIT WORK
 // ==========================================
 
-submitButton.addEventListener("click", async () => {
+submissionForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
   try {
     if (!connectedWallet) {
       alert("Please connect your MetaMask wallet first.");
@@ -903,6 +1397,67 @@ submitButton.addEventListener("click", async () => {
       return;
     }
 
+    // ------------------------------------------
+    // GET FORM DATA
+    // ------------------------------------------
+
+    const description = document
+      .getElementById("submission-description")
+      .value
+      .trim();
+
+    const link = document
+      .getElementById("submission-link")
+      .value
+      .trim();
+
+    const notes = document
+      .getElementById("submission-notes")
+      .value
+      .trim();
+
+    if (!description) {
+      alert("Please describe the completed work.");
+      return;
+    }
+
+    // ------------------------------------------
+    // SAVE SUBMISSION TO AWS
+    // ------------------------------------------
+
+    transactionStatus.innerHTML =
+      "Saving work submission to cloud...";
+
+    const awsResponse = await fetch(`${API_URL}/jobs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "setSubmission",
+        jobId: activeJob.jobId,
+        submissionDescription: description,
+        submissionLink: link,
+        submissionNotes: notes,
+        freelancerId: connectedWallet
+      })
+    });
+
+    const awsResult = await awsResponse.json();
+
+    if (!awsResponse.ok) {
+      throw new Error(
+        awsResult.message || "Unable to save work submission."
+      );
+    }
+
+    // ------------------------------------------
+    // SUBMIT WORK ON BLOCKCHAIN
+    // ------------------------------------------
+
+    transactionStatus.innerHTML =
+      "Submitting work · confirm transaction in MetaMask...";
+
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
 
@@ -912,26 +1467,68 @@ submitButton.addEventListener("click", async () => {
       signer
     );
 
-    transactionStatus.innerHTML =
-      "Submitting work · confirm transaction in MetaMask...";
-
     const submitTx = await submitContract.submitWork(
       activeJob.blockchainJobId
     );
 
     await submitTx.wait();
 
+    // ------------------------------------------
+    // SAVE LOCAL STATE
+    // ------------------------------------------
+
     activeJob.blockchainSubmitted = true;
+    activeJob.submissionDescription = description;
+    activeJob.submissionLink = link;
+    activeJob.submissionNotes = notes;
+    activeJob.submittedAt = new Date().toISOString();
 
     localStorage.setItem(
       "escrowActiveJob",
       JSON.stringify(activeJob)
     );
 
-    submissionStatus.textContent = "Delivered — work submitted";
+    // ------------------------------------------
+    // UPDATE ESCROW UI
+    // ------------------------------------------
+
+    submissionStatus.textContent =
+      "Delivered — work submitted";
 
     transactionStatus.innerHTML =
       `Last tx: Submit work · ${submitTx.hash}`;
+
+    document.getElementById(
+      "work-submission-view"
+    ).hidden = false;
+
+    document.getElementById(
+      "submitted-work-description"
+    ).textContent = description;
+
+    const submittedLink = document.getElementById(
+      "submitted-work-link"
+    );
+
+    if (link) {
+      submittedLink.href = link;
+      submittedLink.textContent = link;
+    } else {
+      submittedLink.removeAttribute("href");
+      submittedLink.textContent = "No link provided";
+    }
+
+    document.getElementById(
+      "submitted-work-notes"
+    ).textContent =
+      notes || "No additional notes.";
+
+    document.getElementById(
+      "submitted-work-time"
+    ).textContent =
+      new Date(activeJob.submittedAt).toLocaleString();
+
+    submissionForm.reset();
 
     alert("Work submitted successfully.");
 
@@ -943,11 +1540,12 @@ submitButton.addEventListener("click", async () => {
 
     alert(
       "Unable to submit work.\n\n" +
-      (error.reason || error.shortMessage || error.message)
+      (error.reason ||
+        error.shortMessage ||
+        error.message)
     );
   }
 });
-
 
 // ==========================================
 // APPROVE PAYMENT
@@ -1300,6 +1898,13 @@ function updateConnectedWallet(address) {
 
     walletButton.textContent = shortAddress;
 
+    const profileWallet =
+    document.getElementById("profile-wallet");
+
+  if (profileWallet) {
+    profileWallet.textContent = address;
+  }
+
     console.log("Connected wallet:", connectedWallet);
 }
 
@@ -1331,6 +1936,7 @@ window.ethereum?.on("accountsChanged", async (accounts) => {
 
     // Reload jobs for the newly selected wallet
     await loadJobsFromAPI();
+    await loadProfile();
 });
 
 // Detect the currently selected account when the page loads
@@ -1354,21 +1960,275 @@ async function loadConnectedWallet() {
 
 loadConnectedWallet();
 
-  // ==========================================
-  // 12. EDIT PROFILE PLACEHOLDER
-  // ==========================================
+    // ==========================================
+    // 12. PROFILE - DYNAMODB
+    // ==========================================
 
-  const editProfileButton = document.getElementById("btn-edit-profile");
+    const editProfileButton =
+        document.getElementById("btn-edit-profile");
 
-  editProfileButton.addEventListener("click", () => {
-    alert("Profile editing will be connected to the cloud database later.");
-  });
+    const profileEditPanel =
+        document.getElementById("profile-edit-panel");
 
-    // Load jobs from AWS when the page opens
-  // Load jobs from AWS when the page opens
+    const profileForm =
+        document.getElementById("profile-form");
 
-await loadConnectedWallet();
-await loadJobsFromAPI();
+    const cancelProfileButton =
+        document.getElementById("btn-cancel-profile");
+
+    const profileName =
+        document.getElementById("profile-display-name");
+
+    const profileSkills =
+        document.getElementById("profile-skills");
+
+    const profileExperience =
+        document.getElementById("profile-experience");
+
+    const profileCategory =
+        document.getElementById("profile-category");
+
+    const profileNameInput =
+        document.getElementById("profile-name");
+
+    const profileSkillsInput =
+        document.getElementById("profile-skills-input");
+
+    const profileExperienceInput =
+        document.getElementById("profile-experience-input");
+
+    const profileCategoryInput =
+        document.getElementById("profile-category-input");
+
+
+    // ==========================================
+    // LOAD PROFILE FROM DYNAMODB
+    // ==========================================
+
+    async function loadProfile() {
+
+        if (!connectedWallet) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(`${API_URL}/jobs`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "getProfile",
+                    walletAddress: connectedWallet
+                })
+            });
+
+            const result = await response.json();
+
+            // New user — no profile exists
+            if (response.status === 404) {
+
+                profileEditPanel.hidden = false;
+
+                profileNameInput.value = "";
+                profileSkillsInput.value = "";
+                profileExperienceInput.value = "";
+                profileCategoryInput.value = "";
+
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message || "Unable to load profile."
+                );
+            }
+
+            // Display saved profile
+            profileName.textContent =
+                result.name || "Unnamed User";
+
+            profileSkills.textContent =
+                result.skills || "No skills added";
+
+            profileExperience.textContent =
+                result.experience || "Not specified";
+
+            profileCategory.textContent =
+                result.category || "Not specified";
+
+            // Fill edit form too
+            profileNameInput.value =
+                result.name || "";
+
+            profileSkillsInput.value =
+                result.skills || "";
+
+            profileExperienceInput.value =
+                result.experience || "";
+
+            profileCategoryInput.value =
+                result.category || "";
+
+        } catch (error) {
+
+            console.error(
+                "Error loading profile:",
+                error
+            );
+        }
+    }
+
+
+    // ==========================================
+    // OPEN PROFILE EDIT
+    // ==========================================
+
+    editProfileButton.addEventListener("click", () => {
+
+        profileEditPanel.hidden = false;
+
+        profileEditPanel.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+    });
+
+
+    // ==========================================
+    // SAVE PROFILE TO DYNAMODB
+    // ==========================================
+
+    profileForm.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+
+        if (!connectedWallet) {
+            alert("Please connect your MetaMask wallet first.");
+            return;
+        }
+
+        const name =
+            profileNameInput.value.trim();
+
+        const skills =
+            profileSkillsInput.value.trim();
+
+        const experience =
+            profileExperienceInput.value.trim();
+
+        const category =
+            profileCategoryInput.value;
+
+        if (
+            !name ||
+            !skills ||
+            !experience ||
+            !category
+        ) {
+            alert("Please complete all profile fields.");
+            return;
+        }
+
+        try {
+
+            const saveButton =
+                document.getElementById("btn-save-profile");
+
+            saveButton.disabled = true;
+            saveButton.textContent = "Saving...";
+
+            const response = await fetch(`${API_URL}/jobs`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "setProfile",
+                    walletAddress: connectedWallet,
+                    name: name,
+                    skills: skills,
+                    experience: experience,
+                    category: category
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message || "Unable to save profile."
+                );
+            }
+
+            // Update profile display
+            profileName.textContent =
+                result.name;
+
+            profileSkills.textContent =
+                result.skills;
+
+            profileExperience.textContent =
+                result.experience;
+
+            profileCategory.textContent =
+                result.category;
+
+            profileEditPanel.hidden = true;
+
+            await loadJobsFromAPI();
+
+            alert("Profile saved successfully.");
+
+        } catch (error) {
+
+            console.error(
+                "Profile save failed:",
+                error
+            );
+
+            alert(
+                "Unable to save profile.\n\n" +
+                (error.message || "Unknown error.")
+            );
+
+        } finally {
+
+            const saveButton =
+                document.getElementById("btn-save-profile");
+
+            saveButton.disabled = false;
+            saveButton.textContent = "Save Profile";
+        }
+
+    });
+
+
+    // ==========================================
+    // CANCEL PROFILE EDIT
+    // ==========================================
+
+    cancelProfileButton.addEventListener("click", () => {
+
+        profileEditPanel.hidden = true;
+
+    });
+
+
+    // ==========================================
+    // LOAD PROFILE FOR CONNECTED WALLET
+    // ==========================================
+      
+
+        // Load jobs from AWS when the page opens
+      // Load jobs from AWS when the page opens
+
+    await loadConnectedWallet();
+    await loadProfile();
+    await loadJobsFromAPI();
+    await loadSavedSubmission();
 
 console.log("FreelanceEscrow frontend JavaScript loaded successfully.");
 });

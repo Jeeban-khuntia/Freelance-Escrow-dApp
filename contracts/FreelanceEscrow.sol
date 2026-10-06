@@ -287,10 +287,7 @@ contract FreelanceEscrow {
         Job storage job = jobs[jobId];
 
         require(job.state == JobState.Created, "Job is not open");
-        require(
-            hasApplied[jobId][freelancer],
-            "Address has not applied"
-        );
+       
         require(
             freelancer != address(0),
             "Invalid freelancer"

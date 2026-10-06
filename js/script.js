@@ -490,26 +490,31 @@ browseJobList.addEventListener("click", async (event) => {
     }
   });
 
-  // ==========================================
-  // 9. ESCROW BUTTONS
-  // ==========================================
+ // ==========================================
+// 9. ESCROW BUTTONS
+// ==========================================
 
-  const fundButton = document.getElementById("btn-fund-escrow");
-  // ==========================================
+const fundButton = document.getElementById("btn-fund-escrow");
+const acceptButton = document.getElementById("btn-accept-job");
+
+// ==========================================
 // BLOCKCHAIN CONTRACT CONNECTION
 // ==========================================
 
 const CONTRACT_ADDRESS =
-    "0xc76bF490373A358eDAFC49c9D925Ee6A7d4aBAc1";
+    "0xd749450980Cbd18C213785D183e78960e3EeE279";
 
 const CONTRACT_ABI = [
     "function owner() view returns (address)",
+    "function jobCount() view returns (uint256)",
     "function getBalance() view returns (uint256)",
 
-    "function createJob(uint256 budget, uint256 deadline, string title) returns (uint256)",
+    "function createJob(string title, uint256 budget, uint256 deadline) returns (uint256)",
     "function selectFreelancer(uint256 jobId, address freelancer)",
     "function fundJob(uint256 jobId) payable",
-
+    "function acceptJob(uint256 jobId)",
+    "function submitWork(uint256 jobId) ",
+    "function approvePayment(uint256 jobId)",
     "function getJob(uint256 jobId) view returns (uint256,address,address,uint256,uint256,string,uint8,bool)"
 ];
 
@@ -523,7 +528,6 @@ async function getContract() {
     }
 
     blockchainProvider = new ethers.BrowserProvider(window.ethereum);
-
     blockchainSigner = await blockchainProvider.getSigner();
 
     contract = new ethers.Contract(
@@ -535,7 +539,24 @@ async function getContract() {
     return contract;
 }
 
-  // Test blockchain connection
+async function getContractWithSigner() {
+    if (!window.ethereum) {
+        throw new Error("MetaMask is not installed.");
+    }
+
+    blockchainProvider = new ethers.BrowserProvider(window.ethereum);
+    blockchainSigner = await blockchainProvider.getSigner();
+
+    contract = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        CONTRACT_ABI,
+        blockchainSigner
+    );
+
+    return contract;
+}
+
+// Test blockchain connection
 async function testContractConnection() {
     try {
         const connectedContract = await getContract();
@@ -552,48 +573,410 @@ async function testContractConnection() {
 
 testContractConnection();
 
-  const submitButton = document.getElementById("btn-submit-work");
+const submitButton = document.getElementById("btn-submit-work");
 
-  const approveButton = document.getElementById("btn-approve-payment");
+const approveButton = document.getElementById("btn-approve-payment");
 
-  const disputeButton = document.getElementById("btn-raise-dispute");
+const disputeButton = document.getElementById("btn-raise-dispute");
 
-  const fundingStatus = document.getElementById("escrow-funding-status");
+const fundingStatus = document.getElementById("escrow-funding-status");
 
-  const submissionStatus = document.getElementById("escrow-submission-status");
+const submissionStatus = document.getElementById("escrow-submission-status");
 
-  const approvalStatus = document.getElementById("escrow-approval-status");
+const approvalStatus = document.getElementById("escrow-approval-status");
 
-  const transactionStatus = document.getElementById("escrow-tx-status");
+const transactionStatus = document.getElementById("escrow-tx-status");
 
-  // Fund
-  fundButton.addEventListener("click", () => {
+
+// ==========================================
+// FUND ESCROW
+// ==========================================
+
+fundButton.addEventListener("click", async () => {
+  try {
+    if (!connectedWallet) {
+      alert("Please connect your MetaMask wallet first.");
+      return;
+    }
+
+    const savedJob = localStorage.getItem("escrowActiveJob");
+
+    if (!savedJob) {
+      alert("Please select a freelancer for a job first.");
+      return;
+    }
+
+    const activeJob = JSON.parse(savedJob);
+
+    if (
+      !activeJob.clientId ||
+      activeJob.clientId.toLowerCase() !== connectedWallet.toLowerCase()
+    ) {
+      alert("Only the job client can fund this escrow.");
+      return;
+    }
+
+    if (!ethers.isAddress(activeJob.freelancerId)) {
+      alert("The selected freelancer wallet address is invalid.");
+      return;
+    }
+
+    if (!activeJob.budget || Number(activeJob.budget) <= 0) {
+      alert("Invalid job budget.");
+      return;
+    }
+
+    if (!activeJob.deadline) {
+      alert("Job deadline is missing.");
+      return;
+    }
+
+    const deadlineTimestamp = Math.floor(
+      new Date(`${activeJob.deadline}T23:59:59`).getTime() / 1000
+    );
+
+    if (
+      !Number.isFinite(deadlineTimestamp) ||
+      deadlineTimestamp <= Math.floor(Date.now() / 1000)
+    ) {
+      alert("The job deadline must be in the future.");
+      return;
+    }
+
+    const connectedContract = await getContractWithSigner();
+
+    const budgetWei = ethers.parseEther(String(activeJob.budget));
+
+    transactionStatus.innerHTML =
+      "Creating blockchain job · confirm transaction in MetaMask...";
+
+    // Get the current blockchain job counter
+    const currentJobCount = await connectedContract.jobCount();
+
+    // The next created job will use the next ID
+    const blockchainJobId = currentJobCount + 1n;
+
+    // 1. Create job on blockchain
+    const createTx = await connectedContract.createJob(
+      activeJob.title,
+      budgetWei,
+      deadlineTimestamp
+    );
+
+    await createTx.wait();
+
+    transactionStatus.innerHTML =
+      "Blockchain job created · selecting freelancer...";
+
+    // 2. Select freelancer on-chain
+    const selectTx = await connectedContract.selectFreelancer(
+      blockchainJobId,
+      activeJob.freelancerId
+    );
+
+    await selectTx.wait();
+
+    transactionStatus.innerHTML =
+      "Freelancer selected on-chain · funding escrow...";
+
+    // 3. Fund escrow
+    const fundTx = await connectedContract.fundJob(
+      blockchainJobId,
+      {
+        value: budgetWei
+      }
+    );
+
+    fundingStatus.textContent = "Funding pending...";
+
+    await fundTx.wait();
+
+    // Save blockchain job ID locally
+    activeJob.blockchainJobId = blockchainJobId.toString();
+    activeJob.blockchainFunded = true;
+
+    localStorage.setItem(
+      "escrowActiveJob",
+      JSON.stringify(activeJob)
+    );
+
     fundingStatus.textContent = "Funded";
 
-    transactionStatus.innerHTML = `Last tx: Fund escrow · pending confirmation`;
-  });
+    transactionStatus.innerHTML =
+      `Last tx: Fund escrow · ${fundTx.hash}`;
 
-  // Submit work
-  submitButton.addEventListener("click", () => {
+    alert(
+      "Escrow funded successfully!\n\n" +
+      `Blockchain Job ID: ${blockchainJobId}\n` +
+      `Budget: ${activeJob.budget} ETH\n` +
+      `Freelancer: ${activeJob.freelancerId}`
+    );
+
+    console.log("Blockchain job ID:", blockchainJobId.toString());
+    console.log("Fund transaction:", fundTx.hash);
+
+  } catch (error) {
+    console.error("Escrow funding failed:", error);
+
+    fundingStatus.textContent = "Not funded";
+
+    transactionStatus.innerHTML =
+      "Fund escrow failed.";
+
+    alert(
+      "Unable to fund escrow.\n\n" +
+      (error.reason || error.shortMessage || error.message)
+    );
+  }
+});
+
+
+// ==========================================
+// ACCEPT JOB
+// ==========================================
+
+acceptButton.addEventListener("click", async () => {
+  try {
+    if (!connectedWallet) {
+      alert("Please connect your MetaMask wallet first.");
+      return;
+    }
+
+    const savedJob = localStorage.getItem("escrowActiveJob");
+
+    if (!savedJob) {
+      alert("No active escrow job found.");
+      return;
+    }
+
+    const activeJob = JSON.parse(savedJob);
+
+    if (!activeJob.blockchainJobId) {
+      alert("Blockchain Job ID is missing.");
+      return;
+    }
+
+    if (
+      !activeJob.freelancerId ||
+      activeJob.freelancerId.toLowerCase() !== connectedWallet.toLowerCase()
+    ) {
+      alert("Only the selected freelancer can accept this job.");
+      return;
+    }
+
+    if (!window.ethereum) {
+      throw new Error("MetaMask is not installed.");
+    }
+
+    // Create a direct contract instance specifically for acceptJob
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+
+    const acceptContract = new ethers.Contract(
+      "0xd749450980Cbd18C213785D183e78960e3EeE279",
+      [
+        "function acceptJob(uint256 jobId)"
+      ],
+      signer
+    );
+
+    transactionStatus.innerHTML =
+      "Accepting job · confirm transaction in MetaMask...";
+
+    const acceptTx = await acceptContract.acceptJob(
+      activeJob.blockchainJobId
+    );
+
+    await acceptTx.wait();
+
+    activeJob.blockchainAccepted = true;
+
+    localStorage.setItem(
+      "escrowActiveJob",
+      JSON.stringify(activeJob)
+    );
+
+    transactionStatus.innerHTML =
+      `Last tx: Accept job · ${acceptTx.hash}`;
+
+    alert("Job accepted successfully.");
+
+    console.log("Accept transaction:", acceptTx.hash);
+
+  } catch (error) {
+    console.error("Accept job failed:", error);
+
+    transactionStatus.innerHTML =
+      "Accept job failed.";
+
+    alert(
+      "Unable to accept job.\n\n" +
+      (error.reason || error.shortMessage || error.message)
+    );
+  }
+});
+
+// ==========================================
+// SUBMIT WORK
+// ==========================================
+
+submitButton.addEventListener("click", async () => {
+  try {
+    if (!connectedWallet) {
+      alert("Please connect your MetaMask wallet first.");
+      return;
+    }
+
+    const savedJob = localStorage.getItem("escrowActiveJob");
+
+    if (!savedJob) {
+      alert("No active escrow job found.");
+      return;
+    }
+
+    const activeJob = JSON.parse(savedJob);
+
+    if (!activeJob.blockchainJobId) {
+      alert("No blockchain job found.");
+      return;
+    }
+
+    if (
+      !activeJob.freelancerId ||
+      activeJob.freelancerId.toLowerCase() !== connectedWallet.toLowerCase()
+    ) {
+      alert("Only the selected freelancer can submit the work.");
+      return;
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+
+    const submitContract = new ethers.Contract(
+      "0xd749450980Cbd18C213785D183e78960e3EeE279",
+      ["function submitWork(uint256 jobId)"],
+      signer
+    );
+
+    transactionStatus.innerHTML =
+      "Submitting work · confirm transaction in MetaMask...";
+
+    const submitTx = await submitContract.submitWork(
+      activeJob.blockchainJobId
+    );
+
+    await submitTx.wait();
+
+    activeJob.blockchainSubmitted = true;
+
+    localStorage.setItem(
+      "escrowActiveJob",
+      JSON.stringify(activeJob)
+    );
+
     submissionStatus.textContent = "Delivered — work submitted";
 
-    transactionStatus.innerHTML = `Last tx: Submit work · pending confirmation`;
+    transactionStatus.innerHTML =
+      `Last tx: Submit work · ${submitTx.hash}`;
+
+    alert("Work submitted successfully.");
+
+  } catch (error) {
+    console.error("Submit work failed:", error);
+
+    transactionStatus.innerHTML =
+      "Submit work failed.";
+
+    alert(
+      "Unable to submit work.\n\n" +
+      (error.reason || error.shortMessage || error.message)
+    );
+  }
+});
+
+
+// ==========================================
+// APPROVE PAYMENT
+// ==========================================
+
+approveButton.addEventListener("click", async () => {
+  try {
+    if (!connectedWallet) {
+      alert("Please connect your MetaMask wallet first.");
+      return;
+    }
+
+    const savedJob = localStorage.getItem("escrowActiveJob");
+
+    if (!savedJob) {
+      alert("No active escrow job found.");
+      return;
+    }
+
+    const activeJob = JSON.parse(savedJob);
+
+    if (!activeJob.blockchainJobId) {
+      alert("No blockchain job found.");
+      return;
+    }
+
+    if (
+      !activeJob.clientId ||
+      activeJob.clientId.toLowerCase() !== connectedWallet.toLowerCase()
+    ) {
+      alert("Only the client can approve the payment.");
+      return;
+    }
+
+    const connectedContract = await getContractWithSigner();
+
+    transactionStatus.innerHTML =
+      "Approving payment · confirm transaction in MetaMask...";
+
+    const approveTx = await connectedContract.approvePayment(
+      activeJob.blockchainJobId
+    );
+
+    await approveTx.wait();
+
+    activeJob.blockchainCompleted = true;
+
+    localStorage.setItem(
+      "escrowActiveJob",
+      JSON.stringify(activeJob)
+    );
+
+    approvalStatus.textContent =
+      "Approved — payment released";
+
+    transactionStatus.innerHTML =
+      `Last tx: Approve payment · ${approveTx.hash}`;
+
+    alert("Payment approved and released to the freelancer.");
+
+  } catch (error) {
+    console.error("Approve payment failed:", error);
+
+    transactionStatus.innerHTML =
+      "Approve payment failed.";
+
+    alert(
+      "Unable to approve payment.\n\n" +
+      (error.reason || error.shortMessage || error.message)
+    );
+  }
+});
+
+
+// ==========================================
+// RAISE DISPUTE
+// ==========================================
+
+disputeButton.addEventListener("click", () => {
+  document.getElementById("dispute").scrollIntoView({
+    behavior: "smooth",
   });
-
-  // Approve payment
-  approveButton.addEventListener("click", () => {
-    approvalStatus.textContent = "Approved — payment released";
-
-    transactionStatus.innerHTML = `Last tx: Approve payment · pending confirmation`;
-  });
-
-  // Raise dispute
-  disputeButton.addEventListener("click", () => {
-    document.getElementById("dispute").scrollIntoView({
-      behavior: "smooth",
-    });
-  });
-
+});
   // ==========================================
   // 10. DISPUTE FORM
   // ==========================================

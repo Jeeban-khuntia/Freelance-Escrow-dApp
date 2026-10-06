@@ -166,16 +166,18 @@ document.addEventListener("DOMContentLoaded", async () => {  // ================
 
                         // Remember the selected job for blockchain escrow
                           localStorage.setItem(
-                              "escrowActiveJob",
-                              JSON.stringify({
-                                  jobId: job.jobId,
-                                  title: job.title,
-                                  budget: job.budget,
-                                  deadline: job.deadline,
-                                  clientId: job.clientId,
-                                  freelancerId: application.freelancerId
-                              })
-                          );
+                          "escrowActiveJob",
+                          JSON.stringify({
+                              jobId: job.jobId,
+                              title: job.title,
+                              budget: job.budget,
+                              deadline: job.deadline,
+                              clientId: job.clientId,
+                              freelancerId: application.freelancerId,
+                              blockchainJobId: job.blockchainJobId || null,
+                              blockchainFunded: job.blockchainFunded || false
+                          })
+                      );
 
                         alert("Freelancer selected successfully!");
 
@@ -502,7 +504,7 @@ const acceptButton = document.getElementById("btn-accept-job");
 // ==========================================
 
 const CONTRACT_ADDRESS =
-    "0xd749450980Cbd18C213785D183e78960e3EeE279";
+    "0x878DCED9352eC87354e34F4cB15e562458450673";
 
 const CONTRACT_ABI = [
     "function owner() view returns (address)",
@@ -513,10 +515,17 @@ const CONTRACT_ABI = [
     "function selectFreelancer(uint256 jobId, address freelancer)",
     "function fundJob(uint256 jobId) payable",
     "function acceptJob(uint256 jobId)",
-    "function submitWork(uint256 jobId) ",
+    "function submitWork(uint256 jobId)",
     "function approvePayment(uint256 jobId)",
-    "function getJob(uint256 jobId) view returns (uint256,address,address,uint256,uint256,string,uint8,bool)"
-];
+    "function raiseDispute(uint256 jobId)",
+    "function voteOnDispute(uint256 jobId, uint8 vote)",
+    "function resolveDispute(uint256 jobId)",
+    "function clientVotes(uint256) view returns (uint256)",
+    "function freelancerVotes(uint256) view returns (uint256)",
+    "function isJuryMember(address) view returns (bool)",
+    "function juryCount() view returns (uint256)",
+    "function getJob(uint256 jobId) view returns (uint256,address,address,uint256,uint256,string,uint8)"
+    ];
 
 let contract = null;
 let blockchainProvider = null;
@@ -691,14 +700,36 @@ fundButton.addEventListener("click", async () => {
 
     await fundTx.wait();
 
-    // Save blockchain job ID locally
-    activeJob.blockchainJobId = blockchainJobId.toString();
-    activeJob.blockchainFunded = true;
+      // Save blockchain job ID to AWS
+      const blockchainSaveResponse = await fetch(`${API_URL}/jobs`, {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+              action: "setBlockchainJob",
+              jobId: activeJob.jobId,
+              blockchainJobId: blockchainJobId.toString()
+          })
+      });
 
-    localStorage.setItem(
-      "escrowActiveJob",
-      JSON.stringify(activeJob)
-    );
+      const blockchainSaveResult = await blockchainSaveResponse.json();
+
+      if (!blockchainSaveResponse.ok) {
+          throw new Error(
+              blockchainSaveResult.message ||
+              "Failed to save blockchain job ID"
+          );
+      }
+
+      // Save blockchain job ID locally too
+      activeJob.blockchainJobId = blockchainJobId.toString();
+      activeJob.blockchainFunded = true;
+
+      localStorage.setItem(
+          "escrowActiveJob",
+          JSON.stringify(activeJob)
+      );
 
     fundingStatus.textContent = "Funded";
 
@@ -743,17 +774,40 @@ acceptButton.addEventListener("click", async () => {
     }
 
     const savedJob = localStorage.getItem("escrowActiveJob");
+    let activeJob = savedJob ? JSON.parse(savedJob) : null;
 
-    if (!savedJob) {
-      alert("No active escrow job found.");
-      return;
+    // If blockchain ID is not in localStorage, get it from AWS
+    if (!activeJob || !activeJob.blockchainJobId) {
+        const jobsResponse = await fetch(`${API_URL}/jobs`);
+        const jobs = await jobsResponse.json();
+
+        const cloudJob = jobs.find(
+            job =>
+                job.jobId === activeJob?.jobId &&
+                job.blockchainJobId
+        );
+
+    if (!cloudJob) {
+        alert("Blockchain job is not funded yet.");
+        return;
     }
 
-    const activeJob = JSON.parse(savedJob);
+    activeJob = {
+        ...cloudJob,
+        freelancerId:
+            cloudJob.selectedFreelancer ||
+            activeJob?.freelancerId
+    };
+
+    localStorage.setItem(
+        "escrowActiveJob",
+        JSON.stringify(activeJob)
+    );
+    }
 
     if (!activeJob.blockchainJobId) {
-      alert("Blockchain Job ID is missing.");
-      return;
+        alert("Blockchain Job ID is missing.");
+        return;
     }
 
     if (
@@ -773,7 +827,7 @@ acceptButton.addEventListener("click", async () => {
     const signer = await provider.getSigner();
 
     const acceptContract = new ethers.Contract(
-      "0xd749450980Cbd18C213785D183e78960e3EeE279",
+      CONTRACT_ADDRESS,
       [
         "function acceptJob(uint256 jobId)"
       ],
@@ -853,7 +907,7 @@ submitButton.addEventListener("click", async () => {
     const signer = await provider.getSigner();
 
     const submitContract = new ethers.Contract(
-      "0xd749450980Cbd18C213785D183e78960e3EeE279",
+      CONTRACT_ADDRESS,
       ["function submitWork(uint256 jobId)"],
       signer
     );
@@ -989,8 +1043,45 @@ disputeButton.addEventListener("click", () => {
 
   const juryStatus = document.getElementById("jury-status");
 
-  disputeForm.addEventListener("submit", (event) => {
-    event.preventDefault();
+  disputeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  try {
+    if (!connectedWallet) {
+      alert("Please connect your MetaMask wallet first.");
+      return;
+    }
+
+    const savedJob = localStorage.getItem("escrowActiveJob");
+
+    if (!savedJob) {
+      alert("No active escrow job found.");
+      return;
+    }
+
+    const activeJob = JSON.parse(savedJob);
+
+    if (!activeJob.blockchainJobId) {
+      alert("No blockchain job found.");
+      return;
+    }
+
+    if (
+      !activeJob.clientId ||
+      !activeJob.freelancerId
+    ) {
+      alert("Client or freelancer information is missing.");
+      return;
+    }
+
+    const wallet = connectedWallet.toLowerCase();
+    const client = activeJob.clientId.toLowerCase();
+    const freelancer = activeJob.freelancerId.toLowerCase();
+
+    if (wallet !== client && wallet !== freelancer) {
+      alert("Only the client or selected freelancer can raise a dispute.");
+      return;
+    }
 
     const reason = disputeReason.value.trim();
 
@@ -999,16 +1090,191 @@ disputeButton.addEventListener("click", () => {
       return;
     }
 
-    disputeStatus.innerHTML = `<span class="job-state">Disputed</span>`;
+    const connectedContract = await getContractWithSigner();
+
+    transactionStatus.innerHTML =
+      "Raising dispute · confirm transaction in MetaMask...";
+
+    const disputeTx = await connectedContract.raiseDispute(
+      activeJob.blockchainJobId
+    );
+
+    await disputeTx.wait();
+
+    activeJob.blockchainDisputed = true;
+    activeJob.disputeReason = reason;
+
+    localStorage.setItem(
+      "escrowActiveJob",
+      JSON.stringify(activeJob)
+    );
+
+    disputeStatus.innerHTML =
+      `<span class="job-state">Disputed</span>`;
 
     juryStatus.textContent =
-      "Jury Voting — authorized members assigned; votes pending";
+      "Dispute raised — jury voting is now open.";
+
+    transactionStatus.innerHTML =
+      `Last tx: Raise dispute · ${disputeTx.hash}`;
 
     alert(
       "Dispute raised successfully.\n\n" +
-        "Jury voting will be handled by the smart contract later.",
+      "The job is now under jury review."
     );
-  });
+
+  } catch (error) {
+    console.error("Raise dispute failed:", error);
+
+    transactionStatus.innerHTML =
+      "Raise dispute failed.";
+
+    alert(
+      "Unable to raise dispute.\n\n" +
+      (error.reason || error.shortMessage || error.message)
+    );
+  }
+});
+
+// ==========================================
+// 11. JURY VOTING AND DISPUTE RESOLUTION
+// ==========================================
+
+const voteClientButton = document.getElementById("btn-vote-client");
+const voteFreelancerButton = document.getElementById("btn-vote-freelancer");
+const resolveDisputeButton = document.getElementById("btn-resolve-dispute");
+const juryVoteCount = document.getElementById("jury-vote-count");
+const disputeResolution = document.getElementById("dispute-resolution");
+
+async function getActiveDisputeJob() {
+  if (!connectedWallet) {
+    throw new Error("Connect your MetaMask wallet first.");
+  }
+
+  const savedJob = localStorage.getItem("escrowActiveJob");
+
+  if (!savedJob) {
+    throw new Error("No active escrow job found.");
+  }
+
+  const activeJob = JSON.parse(savedJob);
+
+  if (activeJob.blockchainJobId == null) {
+    throw new Error("The active job has no blockchain job ID.");
+  }
+
+  return activeJob;
+}
+
+async function refreshJuryVotes(contract, jobId) {
+  const clientVotes = await contract.clientVotes(jobId);
+  const freelancerVotes = await contract.freelancerVotes(jobId);
+
+  juryVoteCount.textContent =
+    "Votes for Client: " + clientVotes.toString() +
+    " | Votes for Freelancer: " + freelancerVotes.toString();
+}
+
+async function submitJuryVote(vote, voteLabel) {
+  try {
+    const activeJob = await getActiveDisputeJob();
+    const contract = await getContractWithSigner();
+
+    juryStatus.textContent =
+      "Submitting jury vote — confirm the transaction in MetaMask.";
+
+    const tx = await contract.voteOnDispute(
+      activeJob.blockchainJobId,
+      vote
+    );
+
+    await tx.wait();
+
+    await refreshJuryVotes(
+      contract,
+      activeJob.blockchainJobId
+    );
+
+    juryStatus.textContent = `${voteLabel} vote recorded successfully.`;
+
+    document.getElementById("escrow-tx-status").textContent =
+      `Last transaction: Jury vote · ${tx.hash}`;
+
+    alert(`${voteLabel} vote recorded successfully.`);
+  } catch (error) {
+    console.error("Jury vote failed:", error);
+
+    alert(
+      "Unable to submit jury vote.\n\n" +
+      (error.reason || error.shortMessage || error.message)
+    );
+  }
+}
+
+// Vote enum: None = 0, Client = 1, Freelancer = 2
+voteClientButton.addEventListener("click", () => {
+  submitJuryVote(1, "Client");
+});
+
+voteFreelancerButton.addEventListener("click", () => {
+  submitJuryVote(2, "Freelancer");
+});
+
+resolveDisputeButton.addEventListener("click", async () => {
+  try {
+    const activeJob = await getActiveDisputeJob();
+    const contract = await getContractWithSigner();
+    const jobId = activeJob.blockchainJobId;
+
+    await refreshJuryVotes(contract, jobId);
+
+    juryStatus.textContent =
+      "Resolving dispute — confirm the transaction in MetaMask.";
+
+    const tx = await contract.resolveDispute(jobId);
+    await tx.wait();
+
+    const job = await contract.getJob(jobId);
+    const clientVotes = await contract.clientVotes(jobId);
+    const freelancerVotes = await contract.freelancerVotes(jobId);
+
+    // JobState.Resolved = 6
+    if (Number(job[6]) !== 6) {
+      throw new Error(
+        "The transaction confirmed, but the job is not marked Resolved."
+      );
+    }
+
+    const result =
+      freelancerVotes > clientVotes
+        ? "Resolved: payment released to the freelancer."
+        : "Resolved: escrow refunded to the client.";
+
+    disputeResolution.textContent = result;
+    disputeStatus.textContent = "Resolved";
+    juryStatus.textContent = "Jury decision finalized.";
+
+    activeJob.blockchainResolved = true;
+    activeJob.disputeResolution = result;
+
+    localStorage.setItem(
+      "escrowActiveJob",
+      JSON.stringify(activeJob)
+    );
+
+    document.getElementById("escrow-tx-status").textContent =
+      `Last transaction: Resolve dispute · ${tx.hash}`;
+
+    alert(result);
+  } catch (error) {
+    console.error("Dispute resolution failed:", error);
+
+    alert(
+      "Unable to resolve dispute.\n\n" +
+      (error.reason || error.shortMessage || error.message)
+    );
+  }
+});
 
 // ==========================================
 // 11. METAMASK WALLET CONNECTION

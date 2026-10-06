@@ -510,19 +510,18 @@ contract FreelanceEscrow {
 
         require(
             juryCount > 0,
-            "No jury members configured"
-        );
+         "No jury members configured"); 
 
-        uint256 totalVotes =
-            clientVotes[jobId] +
-            freelancerVotes[jobId];
+        uint256 totalVotes = clientVotes[jobId] + freelancerVotes[jobId];
+
 
         uint256 majority =
             (juryCount / 2) + 1;
 
         require(
-            totalVotes >= majority,
-            "Majority not reached"
+        clientVotes[jobId] >= majority ||
+        freelancerVotes[jobId] >= majority,
+        "Majority not reached"
         );
 
         uint256 amount = job.budget;

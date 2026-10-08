@@ -79,14 +79,15 @@ document.addEventListener("DOMContentLoaded", async () => {  // ================
       jobs.forEach((job) => {
         const card = document.createElement("article");
 
-        card.className = "browse-job-card";
-        card.dataset.jobId = job.jobId;
+      card.className = "job-card browse-job-card";        card.dataset.jobId = job.jobId;
         card.id = job.jobId;
 
         card.innerHTML = `
           <div>
             <h3>${job.title}</h3>
-            <p>${job.description}</p>
+            <p class="job-description recommendation-description">
+            ${job.description || "No description provided."}
+            </p>
             <p>
               <strong>Category:</strong> ${job.category}
             </p>
@@ -390,7 +391,7 @@ async function loadRecommendedJobs(jobs) {
             })
             .filter(item => item.matchScore > 0)
             .sort((a, b) => b.matchScore - a.matchScore)
-            .slice(0, 5);
+            .slice(0, 4);
 
         if (recommendations.length === 0) {
             recommendedJobList.innerHTML =
@@ -411,7 +412,9 @@ async function loadRecommendedJobs(jobs) {
 
                 <h3 class="job-title">${job.title}</h3>
 
-                <p>${job.description}</p>
+                <p class="job-description recommendation-description">
+                ${job.description || "No description provided."}
+                </p>
 
                 <p>
                     <strong>Matching skills:</strong>
@@ -486,8 +489,9 @@ function addDashboardItem(list, job, state, role, note) {
         <span class="activity-note">${note}</span>
     `;
 
-    list.appendChild(item);
-}
+    if (list.children.length < 5) {
+      list.appendChild(item);
+}}
 
 async function loadDashboard(jobs) {
     appliedJobsList.innerHTML = "";
@@ -502,8 +506,8 @@ async function loadDashboard(jobs) {
 
     const wallet = connectedWallet.toLowerCase();
 
-    for (const job of jobs) {
-        let blockchainState = null;
+    for (const job of jobs.slice(0, 15)) {
+          let blockchainState = null;
 
         // Read blockchain state when a job has a blockchain ID
         if (job.blockchainJobId) {
@@ -618,11 +622,18 @@ async function loadDashboard(jobs) {
 
 const notificationList = document.getElementById("notification-list");
 
-function addNotification(message) {
+    function addNotification(message) {
+
+    if (notificationList.children.length >= 6) {
+        return;
+    }
+
     const item = document.createElement("li");
+
     item.textContent = message;
+
     notificationList.appendChild(item);
-}
+    }
 
 async function loadNotifications(jobs) {
     notificationList.innerHTML = "";
@@ -634,6 +645,8 @@ async function loadNotifications(jobs) {
 
     const wallet = connectedWallet.toLowerCase();
     let notificationCount = 0;
+    const notificationBadge =
+    document.getElementById("notification-badge");
 
     for (const job of jobs) {
         const isClient =
@@ -674,10 +687,10 @@ async function loadNotifications(jobs) {
         }
 
         // Work submitted to client
+
         if (
             isClient &&
-            job.submission &&
-            job.submission.description
+            job.submissionDescription
         ) {
             addNotification(
                 `Work submitted for "${job.title}" — awaiting your approval.`
@@ -701,6 +714,11 @@ async function loadNotifications(jobs) {
     if (notificationCount === 0) {
         addNotification("No new notifications.");
     }
+
+    notificationBadge.textContent = Math.min(notificationCount, 6);
+    notificationBadge.setAttribute(
+    "aria-label",
+    `${Math.min(notificationCount, 6)} notifications`);
 }
 
   function searchJobs(searchTerm) {
@@ -763,75 +781,118 @@ async function loadNotifications(jobs) {
   });
 
   // ==========================================
-  // 6. JOB FILTERS
-  // ==========================================
+// 6. JOB FILTERS
+// ==========================================
 
-  const filterForm = document.getElementById("job-filter-form");
+const filterForm = document.getElementById("job-filter-form");
 
-  filterForm.addEventListener("submit", (event) => {
+filterForm.addEventListener("submit", (event) => {
     event.preventDefault();
 
     const category = document
-      .getElementById("filter-category")
-      .value.toLowerCase();
+        .getElementById("filter-category")
+        .value.toLowerCase();
 
-    const budget = document.getElementById("filter-budget").value;
+    const budget = document
+        .getElementById("filter-budget")
+        .value;
 
     const jobType = document
-      .getElementById("filter-job-type")
-      .value.toLowerCase();
+        .getElementById("filter-job-type")
+        .value.toLowerCase();
+
+    const deadline = document
+        .getElementById("filter-deadline")
+        .value;
 
     const jobs = document.querySelectorAll(".browse-job-card");
 
     jobs.forEach((job) => {
-      const text = job.textContent.toLowerCase();
+        const text = job.textContent.toLowerCase();
 
-      let matchesCategory = true;
-      let matchesBudget = true;
-      let matchesJobType = true;
+        let matchesCategory = true;
+        let matchesBudget = true;
+        let matchesJobType = true;
+        let matchesDeadline = true;
 
-      // Category filter
-      if (category) {
-        matchesCategory = text.includes(category);
-      }
-
-      // Job type filter
-      if (jobType) {
-        matchesJobType = text.includes(jobType);
-      }
-
-      // Budget filter
-      if (budget) {
-        const budgetMatch = text.match(/(\d+(\.\d+)?)\s*eth/i);
-
-        if (budgetMatch) {
-          const jobBudget = parseFloat(budgetMatch[1]);
-
-          if (budget === "0-0.1") {
-            matchesBudget = jobBudget <= 0.1;
-          }
-
-          if (budget === "0.1-0.3") {
-            matchesBudget = jobBudget > 0.1 && jobBudget <= 0.3;
-          }
-
-          if (budget === "0.3-1") {
-            matchesBudget = jobBudget > 0.3 && jobBudget < 1;
-          }
-
-          if (budget === "1+") {
-            matchesBudget = jobBudget >= 1;
-          }
-        } else {
-          matchesBudget = false;
+        // Category filter
+        if (category) {
+            matchesCategory = text.includes(category);
         }
-      }
 
-      job.style.display =
-        matchesCategory && matchesBudget && matchesJobType ? "" : "none";
+        // Job type filter
+        if (jobType) {
+            matchesJobType = text.includes(jobType);
+        }
+
+        // Budget filter
+        if (budget) {
+            const budgetMatch = text.match(/(\d+(?:\.\d+)?)\s*eth/i);
+
+            if (budgetMatch) {
+                const jobBudget = parseFloat(budgetMatch[1]);
+
+                if (budget === "0-0.1") {
+                    matchesBudget = jobBudget <= 0.1;
+                }
+
+                if (budget === "0.1-0.3") {
+                    matchesBudget =
+                        jobBudget > 0.1 && jobBudget <= 0.3;
+                }
+
+                if (budget === "0.3-1") {
+                    matchesBudget =
+                        jobBudget > 0.3 && jobBudget < 1;
+                }
+
+                if (budget === "1+") {
+                    matchesBudget = jobBudget >= 1;
+                }
+            } else {
+                matchesBudget = false;
+            }
+        }
+
+        // Deadline filter
+        if (deadline) {
+            const deadlineText = job.querySelector(".job-meta")
+                ?.textContent || job.textContent;
+
+            const dateMatch = deadlineText.match(
+                /(\d{1,2}\s+\w{3}\s+\d{4})|(\d{4}-\d{2}-\d{2})/
+            );
+
+            if (dateMatch) {
+                const deadlineDate = new Date(dateMatch[0]);
+                const today = new Date();
+
+                today.setHours(0, 0, 0, 0);
+                deadlineDate.setHours(0, 0, 0, 0);
+
+                const daysRemaining =
+                    Math.ceil(
+                        (deadlineDate - today) /
+                        (1000 * 60 * 60 * 24)
+                    );
+
+                matchesDeadline =
+                    daysRemaining >= 0 &&
+                    daysRemaining <= Number(deadline);
+            } else {
+                matchesDeadline = false;
+            }
+        }
+
+        job.style.display =
+            matchesCategory &&
+            matchesBudget &&
+            matchesJobType &&
+            matchesDeadline
+                ? ""
+                : "none";
     });
-  });
-
+});
   // ==========================================
 // 7. APPLY BUTTONS
 // ==========================================
@@ -1015,37 +1076,42 @@ const CONTRACT_ABI = [
     "function freelancerVotes(uint256) view returns (uint256)",
     "function isJuryMember(address) view returns (bool)",
     "function juryCount() view returns (uint256)",
-    "function getJob(uint256 jobId) view returns (uint256,address,address,uint256,uint256,string,uint8)"
-    ];
-
+    "function getJob(uint256 jobId) view returns (uint256,address,address,uint256,uint256,string,uint8)"];
 let contract = null;
 let blockchainProvider = null;
 let blockchainSigner = null;
+
+const SEPOLIA_CHAIN_ID = "0xaa36a7";
+
+async function ensureSepolia() {
+    if (!window.ethereum) {
+        throw new Error("MetaMask is not installed.");
+    }
+
+    const chainId = await window.ethereum.request({
+        method: "eth_chainId"
+    });
+
+    if (chainId !== SEPOLIA_CHAIN_ID) {
+        await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: SEPOLIA_CHAIN_ID }]
+        });
+    }
+}
 
 async function getContract() {
     if (!window.ethereum) {
         throw new Error("MetaMask is not installed.");
     }
 
-    blockchainProvider = new ethers.BrowserProvider(window.ethereum);
-    blockchainSigner = await blockchainProvider.getSigner();
+    await ensureSepolia();
 
-    contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        blockchainSigner
-    );
+    blockchainProvider =
+        new ethers.BrowserProvider(window.ethereum);
 
-    return contract;
-}
-
-async function getContractWithSigner() {
-    if (!window.ethereum) {
-        throw new Error("MetaMask is not installed.");
-    }
-
-    blockchainProvider = new ethers.BrowserProvider(window.ethereum);
-    blockchainSigner = await blockchainProvider.getSigner();
+    blockchainSigner =
+        await blockchainProvider.getSigner();
 
     contract = new ethers.Contract(
         CONTRACT_ADDRESS,
@@ -1071,7 +1137,6 @@ async function testContractConnection() {
     }
 }
 
-testContractConnection();
 
 const submitButton = document.getElementById("btn-submit-work");
 const submissionForm = document.getElementById("work-submission-form");
@@ -1144,7 +1209,7 @@ fundButton.addEventListener("click", async () => {
       return;
     }
 
-    const connectedContract = await getContractWithSigner();
+    const connectedContract = await getContract();
 
     const budgetWei = ethers.parseEther(String(activeJob.budget));
 
@@ -1580,7 +1645,7 @@ approveButton.addEventListener("click", async () => {
       return;
     }
 
-    const connectedContract = await getContractWithSigner();
+    const connectedContract = await getContract();
 
     transactionStatus.innerHTML =
       "Approving payment · confirm transaction in MetaMask...";
@@ -1688,7 +1753,7 @@ disputeButton.addEventListener("click", () => {
       return;
     }
 
-    const connectedContract = await getContractWithSigner();
+    const connectedContract = await getContract();
 
     transactionStatus.innerHTML =
       "Raising dispute · confirm transaction in MetaMask...";
@@ -1776,7 +1841,7 @@ async function refreshJuryVotes(contract, jobId) {
 async function submitJuryVote(vote, voteLabel) {
   try {
     const activeJob = await getActiveDisputeJob();
-    const contract = await getContractWithSigner();
+    const contract = await getContract();
 
     juryStatus.textContent =
       "Submitting jury vote — confirm the transaction in MetaMask.";
@@ -1821,7 +1886,7 @@ voteFreelancerButton.addEventListener("click", () => {
 resolveDisputeButton.addEventListener("click", async () => {
   try {
     const activeJob = await getActiveDisputeJob();
-    const contract = await getContractWithSigner();
+    const contract = await getContract();
     const jobId = activeJob.blockchainJobId;
 
     await refreshJuryVotes(contract, jobId);

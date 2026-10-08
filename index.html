@@ -24,7 +24,11 @@
           <li>
             <a href="#messages" class="nav-link" id="nav-messages" aria-label="Messages and notifications">
               Messages
-              <span id="notification-badge" class="notification-badge" aria-label="3 unread notifications">3</span>
+              <span
+                id="notification-badge"
+                class="notification-badge"
+                aria-label="0 notifications"
+                >0</span>
             </a>
           </li>
           <li><a href="#profile" class="nav-link" id="nav-profile">Profile</a></li>
@@ -299,71 +303,47 @@
       </section>
 
       <section id="dashboard" class="dashboard-section" aria-labelledby="dashboard-heading">
-        <h2 id="dashboard-heading" class="section-heading">Applications / Activity</h2>
+
+        <h2 id="dashboard-heading" class="section-heading">
+          Applications / Activity
+        </h2>
+
         <p class="section-intro">
-          Job states: Created → Funded → Accepted → Delivered → Completed. Disputed jobs follow a separate path.
+          Job states: Created → Funded → Accepted → Delivered → Completed.
+          Disputed jobs follow a separate path.
         </p>
 
         <div class="dashboard-columns">
 
-        <section id="applied-jobs" class="activity-panel" aria-labelledby="applied-jobs-heading">
-          <h3 id="applied-jobs-heading">Applied jobs</h3>
-          <ul id="applied-jobs-list" class="activity-list"></ul>
-        </section>
-
-        <section id="active-jobs" class="activity-panel" aria-labelledby="active-jobs-heading">
-          <h3 id="active-jobs-heading">Active jobs</h3>
-          <ul id="active-jobs-list" class="activity-list"></ul>
-        </section>
-
-        <section id="completed-jobs" class="activity-panel" aria-labelledby="completed-jobs-heading">
-          <h3 id="completed-jobs-heading">Completed jobs</h3>
-          <ul id="completed-jobs-list" class="activity-list"></ul>
-        </section>
-
-      </div>
+          <section
+            id="applied-jobs"
+            class="activity-panel"
+            aria-labelledby="applied-jobs-heading"
+          >
+            <h3 id="applied-jobs-heading">Applied jobs</h3>
+            <ul id="applied-jobs-list" class="activity-list"></ul>
           </section>
 
-          <section id="active-jobs" class="activity-panel" aria-labelledby="active-jobs-heading">
+          <section
+            id="active-jobs"
+            class="activity-panel"
+            aria-labelledby="active-jobs-heading"
+          >
             <h3 id="active-jobs-heading">Active jobs</h3>
-            <ul class="activity-list">
-              <li class="activity-item" data-job-id="job-301">
-                <span class="activity-title">Wallet Address Display on Profile</span>
-                <span class="job-state">Funded</span>
-                <span class="activity-role">Role: Freelancer</span>
-                <span class="activity-note">Awaiting freelancer accept</span>
-              </li>
-              <li class="activity-item" data-job-id="job-302">
-                <span class="activity-title">Job Listing Cards and Filters</span>
-                <span class="job-state">Accepted</span>
-                <span class="activity-role">Role: Freelancer</span>
-                <span class="activity-note">Work in progress</span>
-              </li>
-              <li class="activity-item" data-job-id="job-303">
-                <span class="activity-title">Escrow Status Panel Copy</span>
-                <span class="job-state">Delivered</span>
-                <span class="activity-role">Role: Client</span>
-                <span class="activity-note">Work submitted · pending approval</span>
-              </li>
-            </ul>
+            <ul id="active-jobs-list" class="activity-list"></ul>
           </section>
 
-          <section id="completed-jobs" class="activity-panel" aria-labelledby="completed-jobs-heading">
+          <section
+            id="completed-jobs"
+            class="activity-panel"
+            aria-labelledby="completed-jobs-heading"
+          >
             <h3 id="completed-jobs-heading">Completed jobs</h3>
-            <ul class="activity-list">
-              <li class="activity-item" data-job-id="job-401">
-                <span class="activity-title">Platform Logo and Header Layout</span>
-                <span class="job-state">Completed</span>
-                <span class="activity-note">Payment released to freelancer</span>
-              </li>
-              <li class="activity-item" data-job-id="job-402">
-                <span class="activity-title">About Page Draft</span>
-                <span class="job-state">Completed</span>
-                <span class="activity-note">Closed as client</span>
-              </li>
-            </ul>
+            <ul id="completed-jobs-list" class="activity-list"></ul>
           </section>
+
         </div>
+
       </section>
 
           <section id="escrow-status" class="escrow-status-section" aria-labelledby="escrow-heading">
@@ -562,7 +542,7 @@
           <section id="dispute" class="dispute-section" aria-labelledby="dispute-heading">
             <h2 id="dispute-heading" class="section-heading">Dispute</h2>
             <p class="section-intro">
-              Structure only. Jury voting and settlement will be handled later by authorized jury members and the contract.
+              Disputed jobs are reviewed by authorized jury members. Each jury member can vote once, and a majority decision determines the final settlement.
             </p>
 
             <article id="dispute-example" class="dispute-card" data-job-id="job-501">
@@ -581,11 +561,11 @@
                 <dt>Dispute status</dt>
                 <dd id="dispute-status"><span class="job-state">Disputed</span></dd>
 
-                <dt>Jury / arbitration status</dt>
+                <dt>Jury status</dt> 
                 <dd id="jury-status">Jury Voting — authorized members assigned; votes pending</dd>
 
                 <dt>Resolution result</dt>
-                <dd id="dispute-resolution">Unresolved — awaiting majority decision (Release / Refund)</dd>
+                <dd id="dispute-resolution">Unresolved — awaiting jury majority</dd>                
                 <dt>Jury voting</dt>
                 <dd>
                   <p>Only registered jury wallets can vote. Each member can vote once.</p>
@@ -772,11 +752,12 @@
       <p class="footer-brand">FreelanceEscrow</p>
       <nav class="footer-nav" aria-label="Footer">
         <ul class="footer-links">
-          <li><a href="#about" id="footer-about">About</a></li>
-          <li><a href="#documentation" id="footer-docs">Documentation</a></li>
-          <li><a href="https://github.com" id="footer-github">GitHub</a></li>
-          <li><a href="#terms" id="footer-terms">Terms</a></li>
-          <li><a href="#privacy" id="footer-privacy">Privacy</a></li>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#browse-jobs">Find Jobs</a></li>
+          <li><a href="#post-job">Post a Job</a></li>
+          <li><a href="#dashboard">Dashboard</a></li>
+          <li><a href="#profile">Profile</a></li>
+          <li><a href="#messages">Notifications</a></li>
         </ul>
       </nav>
       <p class="footer-note">Academic prototype. Escrow uses test ETH on an Ethereum-compatible test network.</p>
